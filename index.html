@@ -572,28 +572,6 @@ details summary h2 {
         </div>
 
         <!-- Latencia explicada (redundante) -->
-        <div class="card">
-          <h2>Latencia del sistema (qué es y cómo se calcula)</h2>
-          <p>
-            La latencia es el tiempo que tarda una medición desde que se toma (sensor/ESP32) hasta que aparece en tu pantalla.
-            Este dashboard muestra dos latencias: (1) <b>RTT</b> (tiempo de ida y vuelta de la web al backend) y (2) <b>End-to-End</b>
-            (desde la medición hasta la visualización), utilizando timestamps del backend.
-          </p>
-
-          <div class="code" id="latencyExplain">
-RTT (web ↔ backend) = tiempo_fetch_respuesta_ms
-
-End-to-End aproximada:
-  display_time_ms (cliente) - measured_at_ms (dispositivo)
-
-Latencia de ingesta (backend):
-  received_at_ms - measured_at_ms
-
-Latencia de persistencia:
-  stored_at_ms - received_at_ms
-          </div>
-        </div>
-      </div>
 
       <!-- Right column: Dashboard -->
       <div>

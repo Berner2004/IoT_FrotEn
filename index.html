@@ -381,6 +381,54 @@
       color: var(--text);
       white-space:nowrap;
     }
+    details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details summary h2 {
+  display: inline;
+}
+
+    /* ===== MOBILE OPTIMIZATION ===== */
+@media (max-width: 640px) {
+
+  /* Ocultar texto largo del hero */
+  .hero .sub {
+    display: none;
+  }
+
+  /* Reducir títulos grandes */
+  .hero h1 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  /* Reducir padding general */
+  .card {
+    padding: 12px;
+  }
+
+  /* Menos espacio vertical */
+  .wrap {
+    padding-top: 12px;
+  }
+  .chips {
+    order: -1;
+  }
+  .latencyBig .ms {
+    font-size: 28px;
+  }
+
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
   </style>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b0f14">
@@ -447,41 +495,36 @@
       </div>
     </div>
 
-    <div class="grid">
-      <!-- Left column -->
-      <div>
-        <!-- Cómo funciona (redundante y completo) -->
-        <div class="card">
-          <h2>Cómo funciona el sistema (explicación completa)</h2>
-          <p>
-            Este sistema mide variables eléctricas desde una instalación real y las transforma en registros digitales.
-            Los sensores (voltaje y corriente) entregan señales analógicas al ESP32. El ESP32 muestrea, filtra y calcula valores
-            eléctricos (por ejemplo RMS). Luego empaqueta la medición como JSON y la envía por WiFi a un backend desplegado en Render.
-            El backend valida la muestra, registra tiempos de llegada y guarda la información en la base de datos. Finalmente, la web
-            consulta el backend y visualiza tanto los datos como la latencia total de extremo a extremo.
-          </p>
+    <details class="card">
+  <summary><h2>Cómo funciona el sistema</h2></summary>
 
-          <div class="cols" style="margin-top:12px;">
-            <div class="mini">
-              <h3>Flujo físico (hardware)</h3>
-              <ul>
-                <li>Red eléctrica (AC) → carga (ej. foco)</li>
-                <li>ZMPT101B mide voltaje AC (aislado)</li>
-                <li>SCT-013 mide corriente sin cortar el cable</li>
-                <li>ESP32 lee señales analógicas (ADC) y calcula magnitudes</li>
-              </ul>
-            </div>
-            <div class="mini">
-              <h3>Flujo digital (software)</h3>
-              <ul>
-                <li>ESP32 genera JSON y lo envía por WiFi</li>
-                <li>Backend (Render) recibe y registra timestamps</li>
-                <li>Backend guarda en BD y expone API REST</li>
-                <li>Dashboard web consulta API y muestra estado + latencia</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+  <p>
+    Este sistema mide variables eléctricas desde una instalación real y las transforma en registros digitales.
+    Los sensores (voltaje y corriente) entregan señales analógicas al ESP32...
+  </p>
+
+  <div class="cols" style="margin-top:12px;">
+    <div class="mini">
+      <h3>Flujo físico (hardware)</h3>
+      <ul>
+        <li>Red eléctrica (AC) → carga (ej. foco)</li>
+        <li>ZMPT101B mide voltaje AC (aislado)</li>
+        <li>SCT-013 mide corriente sin cortar el cable</li>
+        <li>ESP32 lee señales analógicas (ADC)</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h3>Flujo digital (software)</h3>
+      <ul>
+        <li>ESP32 → WiFi</li>
+        <li>Backend en Render</li>
+        <li>BD MongoDB</li>
+        <li>Dashboard web</li>
+      </ul>
+    </div>
+  </div>
+</details>
+
 
         <!-- Protocolos por capa (redundante) -->
         <div class="card">

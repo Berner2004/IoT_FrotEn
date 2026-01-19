@@ -568,7 +568,23 @@
       margin:12px 0;
     }
   </style>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0f14">
+
 </head>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => {
+          console.log("Service Worker registrado:", reg.scope);
+        })
+        .catch(err => {
+          console.error("SW error:", err);
+        });
+    });
+  }
+</script>
 
 <body>
   <div class="wrap">

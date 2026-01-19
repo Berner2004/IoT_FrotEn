@@ -567,6 +567,34 @@
       background: rgba(34,48,67,.6);
       margin:12px 0;
     }
+    /* ===== MOBILE OPTIMIZATION ===== */
+@media (max-width: 640px) {
+
+  /* Ocultar texto largo del hero */
+  .hero .sub {
+    display: none;
+  }
+
+  /* Reducir títulos grandes */
+  .hero h1 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  /* Reducir padding general */
+  .card {
+    padding: 12px;
+  }
+
+  /* Menos espacio vertical */
+  .wrap {
+    padding-top: 12px;
+  }
+  .chips {
+    order: -1;
+  }
+}
+
   </style>
   <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0b0f14">

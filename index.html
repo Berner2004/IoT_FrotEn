@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Monitoreo Energético | PWA Dashboard</title>
+
+  <meta name="theme-color" content="#0b0f14" />
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121a23;
+      --card2:#0f1620;
+      --stroke:#223043;
+      --text:#f2f6ff;
+      --muted:#aab6c6;
+      --accent:#00e5ff;
+      --ok:#00c853;
+      --warn:#ffab00;
+      --bad:#ff1744;
+
+      --radius:18px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(0,229,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 80% 0%, rgba(0,200,83,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:18px 14px 30px;
+    }
+
+    /* Topbar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px solid rgba(34,48,67,.7);
+      border-radius: var(--radius);
+      background: rgba(15,22,32,.75);
+      backdrop-filter: blur(10px);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .logo{
+      width:38px; height:38px;
+      border-radius:12px;
+      background: linear-gradient(135deg, rgba(0,229,255,.25), rgba(0,200,83,.18));
+      border:1px solid rgba(34,48,67,.8);
+      display:grid; place-items:center;
+      box-shadow: var(--shadow);
+      flex:0 0 auto;
+    }
+    .logo svg{ opacity:.95; }
+    .brand .t{
+      line-height:1.05;
+      min-width:0;
+    }
+    .brand .t strong{
+      display:block;
+      font-size:14px;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand .t span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      flex:0 0 auto;
+      align-items:center;
+      position:relative;
+    }
+    .btn{
+      border:1px solid rgba(34,48,67,.9);
+      background: rgba(18,26,35,.85);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:650;
+      font-size:12px;
+      cursor:pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(0,229,255,.55);
+      background: rgba(0,229,255,.10);
+    }
+
+    /* SUBMENU */
+    .submenu{
+      position:absolute;
+      top:110%;
+      right:0;
+      min-width:180px;
+      background: rgba(15,22,32,.95);
+      border:1px solid rgba(34,48,67,.9);
+      border-radius:14px;
+      padding:8px;
+      display:none;
+      z-index:100;
+      box-shadow: var(--shadow);
+    }
+    .submenu a{
+      display:block;
+      padding:10px 12px;
+      font-size:13px;
+      color:var(--text);
+      text-decoration:none;
+      border-radius:10px;
+    }
+    .submenu a:hover{
+      background: rgba(255,255,255,.06);
+    }
+    .actions.open .submenu{
+      display:block;
+    }
+
+    /* Layout */
+    .grid{
+      display:grid;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media(min-width: 900px){
+      .grid{
+        grid-template-columns: 1.2fr .8fr;
+        align-items:start;
+      }
+    }
+
+    .card{
+      border:1px solid rgba(34,48,67,.85);
+      background: rgba(18,26,35,.75);
+      border-radius: var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .card p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13px;
+    }
+    .muted{ color:var(--muted); }
+
+    /* Hero */
+    .hero{
+      padding:16px;
+      border-radius: var(--radius);
+      border:1px solid rgba(34,48,67,.85);
+      background:
+        linear-gradient(180deg, rgba(0,229,255,.12), rgba(0,0,0,0)),
+        rgba(15,22,32,.75);
+      box-shadow: var(--shadow);
+    }
+    .hero h1{
+      margin:0 0 10px;
+      font-size:22px;
+      line-height:1.12;
+      letter-spacing:.2px;
+    }
+    .hero .sub{
+      margin:0;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13.5px;
+    }
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:12px;
+    }
+    .chip{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(34,48,67,.9);
+      background: rgba(18,26,35,.65);
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:99px;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(255,171,0,.12);
+    }
+    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 4px rgba(0,200,83,.12); }
+    .dot.bad{ background: var(--bad); box-shadow: 0 0 0 4px rgba(255,23,68,.12); }
+
+    .cols{
+      display:grid;
+      gap:12px;
+    }
+    @media(min-width: 700px){
+      .cols{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .mini{
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.75);
+      border-radius: 16px;
+      padding:14px;
+    }
+    .mini h3{
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+    .mini ul{
+      margin:0;
+      padding:0 0 0 16px;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13px;
+    }
+
+    .kpis{
+      display:grid;
+      gap:12px;
+      grid-template-columns: 1fr 1fr;
+      margin-top:10px;
+    }
+    .kpi{
+      background: rgba(15,22,32,.75);
+      border:1px solid rgba(34,48,67,.8);
+      border-radius: 16px;
+      padding:12px;
+    }
+    .kpi .label{
+      color: var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .kpi .val{
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .kpi .hint{
+      font-size:11.5px;
+      color: var(--muted);
+      margin-top:6px;
+      line-height:1.35;
+    }
+
+    .latencyBig{
+      margin-top:12px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .latencyBig .ms{
+      font-size:38px;
+      font-weight:900;
+      letter-spacing:-.6px;
+      color: var(--accent);
+      line-height:1;
+    }
+    .latencyBig .meta{
+      text-align:right;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .bar{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      background: rgba(34,48,67,.5);
+      overflow:hidden;
+      margin-top:12px;
+      border:1px solid rgba(34,48,67,.75);
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      background: var(--ok);
+      transition: width .35s ease, background .35s ease;
+    }
+
+    .legend{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:10px;
+      color: var(--muted);
+      font-size:12px;
+    }
+    .pill{
+      display:flex; align-items:center; gap:8px;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(15,22,32,.65);
+      padding:8px 10px;
+      border-radius: 999px;
+    }
+
+    .footerNote{
+      margin-top:14px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.55;
+    }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(242,246,255,.9);
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.75);
+      border-radius: 14px;
+      padding:12px;
+      overflow:auto;
+      margin-top:10px;
+      white-space: pre;
+    }
+
+    .bottom{
+      position: sticky;
+      bottom: 10px;
+      margin-top: 14px;
+      border-radius: 999px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: rgba(15,22,32,.75);
+      border:1px solid rgba(34,48,67,.85);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .bottom .left{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .bottom .left .s{
+      min-width:0;
+      color: var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .bottom .right{
+      font-size:12px;
+      font-weight:800;
+      color: var(--text);
+      white-space:nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z" stroke="rgba(242,246,255,.9)" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="t">
+          <strong>Plataforma IoT de Consumo Eléctrico</strong>
+          <span>ESP32 + ZMPT101B + SCT-013 · Backend en Render · Dashboard PWA</span>
+        </div>
+      </div>
+
+      <div class="actions" id="menuActions">
+        <button class="btn" onclick="toggleSubmenu()">☰</button>
+        <button class="btn" id="btnRefresh">Actualizar</button>
+        <button class="btn primary" id="btnPing">Medir latencia</button>
+
+        <div class="submenu">
+          <a href="#">Inicio</a>
+          <a href="#">Lecturas</a>
+          <a href="#">Predicción</a>
+          <a href="#">Dispositivos</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero: problemática -->
+    <div class="hero" style="margin-top:14px;">
+      <h1>El consumo eléctrico excesivo impacta el ambiente, el bolsillo y la red eléctrica</h1>
+      <p class="sub">
+        Cada pico de consumo y cada kilovatio desperdiciado obligan a aumentar la generación energética.
+        Cuando esa generación depende de fuentes no renovables, el resultado es más emisiones y más presión sobre los recursos.
+        Este proyecto convierte mediciones reales en información clara, para comprender, anticipar y reducir el consumo.
+      </p>
+
+      <div class="chips">
+        <div class="chip"><span class="dot" id="dotSystem"></span>Estado del sistema</div>
+        <div class="chip">Monitoreo de voltaje y corriente</div>
+        <div class="chip">Envío de datos a BD vía backend en Render</div>
+        <div class="chip">Latencia end-to-end visible en el dashboard</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left column -->
+      <div>
+        <!-- Cómo funciona (redundante y completo) -->
+        <div class="card">
+          <h2>Cómo funciona el sistema (explicación completa)</h2>
+          <p>
+            Este sistema mide variables eléctricas desde una instalación real y las transforma en registros digitales.
+            Los sensores (voltaje y corriente) entregan señales analógicas al ESP32. El ESP32 muestrea, filtra y calcula valores
+            eléctricos (por ejemplo RMS). Luego empaqueta la medición como JSON y la envía por WiFi a un backend desplegado en Render.
+            El backend valida la muestra, registra tiempos de llegada y guarda la información en la base de datos. Finalmente, la web
+            consulta el backend y visualiza tanto los datos como la latencia total de extremo a extremo.
+          </p>
+
+          <div class="cols" style="margin-top:12px;">
+            <div class="mini">
+              <h3>Flujo físico (hardware)</h3>
+              <ul>
+                <li>Red eléctrica (AC) → carga (ej. foco)</li>
+                <li>ZMPT101B mide voltaje AC (aislado)</li>
+                <li>SCT-013 mide corriente sin cortar el cable</li>
+                <li>ESP32 lee señales analógicas (ADC) y calcula magnitudes</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>Flujo digital (software)</h3>
+              <ul>
+                <li>ESP32 genera JSON y lo envía por WiFi</li>
+                <li>Backend (Render) recibe y registra timestamps</li>
+                <li>Backend guarda en BD y expone API REST</li>
+                <li>Dashboard web consulta API y muestra estado + latencia</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protocolos por capa (redundante) -->
+        <div class="card">
+          <h2>Protocolos de comunicación (por capas)</h2>
+          <div class="cols" style="margin-top:10px;">
+            <div class="mini">
+              <h3>Sensores → ESP32</h3>
+              <ul>
+                <li><b>Señal analógica</b> (ZMPT101B y SCT-013)</li>
+                <li><b>ADC del ESP32</b> (conversión a digital)</li>
+                <li>Muestreo + filtrado (promedio / RMS / calibración)</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>ESP32 → Backend (Render)</h3>
+              <ul>
+                <li><b>WiFi (802.11)</b> como enlace</li>
+                <li><b>HTTP/HTTPS (REST)</b> para envío de datos</li>
+                <li><b>JSON</b> como formato de payload</li>
+                <li>Opcional futuro: <b>MQTT</b> (menor overhead)</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>Backend → Base de datos</h3>
+              <ul>
+                <li>Driver BD (según tu BD: Postgres / MongoDB)</li>
+                <li>Escritura de documento/registro con timestamps</li>
+                <li>Indexación por device_id, fecha, secuencia</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>Web (PWA) → Backend</h3>
+              <ul>
+                <li><b>HTTPS</b> (Render) + fetch</li>
+                <li>Polling o actualización por intervalo</li>
+                <li>Medición de <b>RTT</b> y latencia end-to-end</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="footerNote">
+            Nota redundante (intencional): la comunicación no es un solo “protocolo”, sino una cadena:
+            analógico/ADC (hardware) → WiFi (enlace) → HTTP/HTTPS (transporte aplicación) → JSON (payload) → BD (persistencia) → API (consulta) → UI (visualización).
+          </div>
+        </div>
+
+        <!-- Latencia explicada (redundante) -->
+        <div class="card">
+          <h2>Latencia del sistema (qué es y cómo se calcula)</h2>
+          <p>
+            La latencia es el tiempo que tarda una medición desde que se toma (sensor/ESP32) hasta que aparece en tu pantalla.
+            Este dashboard muestra dos latencias: (1) <b>RTT</b> (tiempo de ida y vuelta de la web al backend) y (2) <b>End-to-End</b>
+            (desde la medición hasta la visualización), utilizando timestamps del backend.
+          </p>
+
+          <div class="code" id="latencyExplain">
+RTT (web ↔ backend) = tiempo_fetch_respuesta_ms
+
+End-to-End aproximada:
+  display_time_ms (cliente) - measured_at_ms (dispositivo)
+
+Latencia de ingesta (backend):
+  received_at_ms - measured_at_ms
+
+Latencia de persistencia:
+  stored_at_ms - received_at_ms
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Dashboard -->
+      <div>
+        <div class="card">
+          <h2>Dashboard de latencia (tiempo real)</h2>
+
+          <div class="latencyBig">
+            <div>
+              <div class="ms" id="msMain">— ms</div>
+              <div class="muted" style="font-size:12px;margin-top:6px;">
+                Latencia end-to-end estimada
+              </div>
+            </div>
+            <div class="meta" id="metaRight">
+              Último dato: —<br/>
+              Dispositivo: —<br/>
+              Secuencia: —
+            </div>
+          </div>
+
+          <div class="bar"><div class="fill" id="fill"></div></div>
+
+          <div class="legend">
+            <div class="pill"><span class="dot ok"></span>Óptimo &lt; 200ms</div>
+            <div class="pill"><span class="dot"></span>Estable 200–350ms</div>
+            <div class="pill"><span class="dot bad"></span>Lento &gt; 350ms</div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">RTT web ↔ backend</div>
+              <div class="val" id="kpiRtt">— ms</div>
+              <div class="hint">Tiempo de ida y vuelta al backend en Render.</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Ingesta (backend)</div>
+              <div class="val" id="kpiIngest">— ms</div>
+              <div class="hint">Desde medición hasta recepción en backend.</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Persistencia (BD)</div>
+              <div class="val" id="kpiStore">— ms</div>
+              <div class="hint">Desde recepción hasta guardado en BD.</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Edad del último dato</div>
+              <div class="val" id="kpiAge">— s</div>
+              <div class="hint">Tiempo desde que se midió hasta ahora.</div>
+            </div>
+          </div>
+
+          <div class="footerNote" id="footerHealth">
+            Estado: esperando datos reales del backend.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>API configurada</h2>
+          <p>
+            Este dashboard consulta el backend desplegado en Render. Cambia la variable <b>API_BASE</b> en el script
+            si tu URL es diferente. También puedes usar un proxy/rewrite si lo sirves desde el mismo dominio.
+          </p>
+          <div class="code" id="apiBox">API_BASE = (configurable en JS)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky bottom status -->
+    <div class="bottom">
+      <div class="left">
+        <span class="dot" id="dotBottom"></span>
+        <div class="s" id="bottomText">Conectando con backend…</div>
+      </div>
+      <div class="right" id="bottomRight">PWA Ready</div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==============================
+     * CONFIGURACION
+     * ==============================
+     * Coloca aqui tu backend en Render:
+     * Ejemplo: https://mi-backend.onrender.com
+     */
+    const API_BASE = "https://TU_BACKEND.onrender.com"; // <-- CAMBIA ESTO
+    const ENDPOINT_LATEST = "/api/telemetry/latest";
+
+    // Intervalos recomendados (mobile)
+    const POLL_MS = 4000;       // cada 4s pide el último dato
+    const PING_MS = 7000;       // cada 7s mide RTT
+
+    // Umbrales latencia end-to-end
+    const TH_OK = 200;
+    const TH_WARN = 350;
+    const TH_MAX = 600; // para barra
+
+    const el = (id) => document.getElementById(id);
+    function toggleSubmenu(){
+      document.getElementById("menuActions").classList.toggle("open");
+    }
+    function setDotState(dotEl, state){
+      dotEl.classList.remove("ok","bad");
+      if(state === "ok") dotEl.classList.add("ok");
+      else if(state === "bad") dotEl.classList.add("bad");
+      // warn = default sin class extra
+    }
+
+    function fmtMs(x){
+      if(x === null || x === undefined || Number.isNaN(x)) return "— ms";
+      return `${Math.round(x)} ms`;
+    }
+
+    function fmtS(x){
+      if(x === null || x === undefined || Number.isNaN(x)) return "— s";
+      const v = Math.max(0, x);
+      if(v < 60) return `${Math.round(v)} s`;
+      return `${Math.round(v/60)} min`;
+    }
+
+    function latencyState(ms){
+      if(ms === null || ms === undefined || Number.isNaN(ms)) return {label:"—", state:"warn"};
+      if(ms < TH_OK) return {label:"Óptimo", state:"ok"};
+      if(ms < TH_WARN) return {label:"Estable", state:"warn"};
+      return {label:"Lento", state:"bad"};
+    }
+
+    function updateLatencyUI(endToEndMs, rttMs, ingestMs, storeMs, measuredAtMs, deviceId, seq){
+      // Main
+      el("msMain").textContent = fmtMs(endToEndMs).replace(" ms","") + " ms";
+
+      // Bar
+      const percent = Math.min(100, Math.max(0, (endToEndMs / TH_MAX) * 100));
+      el("fill").style.width = (Number.isFinite(percent) ? percent : 0) + "%";
+
+      const st = latencyState(endToEndMs);
+      if(st.state === "ok") el("fill").style.background = "var(--ok)";
+      else if(st.state === "bad") el("fill").style.background = "var(--bad)";
+      else el("fill").style.background = "var(--warn)";
+
+      setDotState(el("dotSystem"), st.state);
+      setDotState(el("dotBottom"), st.state);
+
+      // KPIs
+      el("kpiRtt").textContent = fmtMs(rttMs);
+      el("kpiIngest").textContent = fmtMs(ingestMs);
+      el("kpiStore").textContent = fmtMs(storeMs);
+
+      // Age
+      const ageS = measuredAtMs ? (Date.now() - measuredAtMs) / 1000 : null;
+      el("kpiAge").textContent = fmtS(ageS);
+
+      // Meta
+      const last = measuredAtMs ? new Date(measuredAtMs).toLocaleString() : "—";
+      el("metaRight").innerHTML =
+        `Último dato: ${last}<br/>` +
+        `Dispositivo: ${deviceId ?? "—"}<br/>` +
+        `Secuencia: ${seq ?? "—"}`;
+
+      // Bottom / health
+      el("bottomText").textContent =
+        `Estado: ${st.label} · End-to-End: ${fmtMs(endToEndMs)} · RTT: ${fmtMs(rttMs)}`;
+
+      el("footerHealth").textContent =
+        `Estado del sistema: ${st.label}. ` +
+        `Latencia end-to-end estimada = desde medición (ESP32) hasta visualización (web). ` +
+        `RTT = ida y vuelta web ↔ backend en Render. ` +
+        `Ingesta = medición → recepción backend. Persistencia = recepción → BD.`;
+    }
+
+    async function pingBackend(){
+      const url = API_BASE + "/api/ping";
+      const t0 = performance.now();
+      try{
+        const res = await fetch(url, { cache: "no-store" });
+        await res.text();
+        const t1 = performance.now();
+        return (t1 - t0);
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function fetchLatest(){
+      const url = API_BASE + ENDPOINT_LATEST;
+      const t0 = performance.now();
+      try{
+        const res = await fetch(url, { cache: "no-store" });
+        const t1 = performance.now();
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const rtt = (t1 - t0); // tiempo aproximado hasta recibir headers/respuesta
+        return { data, rtt };
+      }catch(e){
+        return { data: null, rtt: null, error: e?.message || String(e) };
+      }
+    }
+
+    // Calcula latencias desde timestamps del backend
+    function computeLatencies(packet){
+      // packet: { measured_at_ms, received_at_ms, stored_at_ms, ... }
+      const measured = Number(packet?.measured_at_ms);
+      const received = Number(packet?.received_at_ms);
+      const stored   = Number(packet?.stored_at_ms);
+
+      const ingest = (Number.isFinite(received) && Number.isFinite(measured)) ? (received - measured) : null;
+      const store  = (Number.isFinite(stored) && Number.isFinite(received)) ? (stored - received) : null;
+
+      // end-to-end: desde medición hasta ahora (visualización)
+      const endToEnd = (Number.isFinite(measured)) ? (Date.now() - measured) : null;
+
+      return { endToEnd, ingest, store, measured };
+    }
+
+    // Fallback demo si no hay backend (para que no quede vacío)
+    function demoFallback(){
+      const now = Date.now();
+      const measured = now - (120 + Math.random()*240);
+      const received = measured + (30 + Math.random()*120);
+      const stored   = received + (10 + Math.random()*60);
+
+      const packet = {
+        device_id: "demo-esp32",
+        seq: Math.floor(1000 + Math.random()*9000),
+        measured_at_ms: Math.floor(measured),
+        received_at_ms: Math.floor(received),
+        stored_at_ms: Math.floor(stored)
+      };
+
+      const { endToEnd, ingest, store, measured: m } = computeLatencies(packet);
+      updateLatencyUI(endToEnd, 140 + Math.random()*120, ingest, store, m, packet.device_id, packet.seq);
+      el("apiBox").textContent = `API_BASE = ${API_BASE} (fallback DEMO activo: backend no disponible)`;
+    }
+
+    let lastRtt = null;
+
+    async function refreshAll(){
+      el("apiBox").textContent = `API_BASE = ${API_BASE}`;
+
+      // 1) ping / rtt
+      const rttPing = await pingBackend();
+      if(rttPing !== null) lastRtt = rttPing;
+
+      // 2) latest packet
+      const { data, rtt, error } = await fetchLatest();
+
+      // si fetchLatest tiene rtt, lo priorizamos
+      const rttBest = (rtt !== null) ? rtt : lastRtt;
+
+      if(!data){
+        el("bottomText").textContent = `Sin conexión con backend (Render). ${error ? "Detalle: "+error : ""}`;
+        setDotState(el("dotSystem"), "bad");
+        setDotState(el("dotBottom"), "bad");
+        demoFallback();
+        return;
+      }
+
+      const { endToEnd, ingest, store, measured } = computeLatencies(data);
+      updateLatencyUI(endToEnd, rttBest, ingest, store, measured, data.device_id, data.seq);
+    }
+
+    // UI actions
+    el("btnRefresh").addEventListener("click", refreshAll);
+    el("btnPing").addEventListener("click", async ()=>{ 
+      const r = await pingBackend();
+      lastRtt = r;
+      await refreshAll();
+    });
+
+    // Iniciar
+    refreshAll();
+    setInterval(refreshAll, POLL_MS);
+    setInterval(async ()=>{ lastRtt = await pingBackend(); }, PING_MS);
+  </script>
+</body>
+</html>

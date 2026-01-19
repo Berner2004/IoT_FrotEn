@@ -1,0 +1,2106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Predicción | Monitoreo Energético PWA</title>
+
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121a23;
+      --card2:#0f1620;
+      --stroke:#223043;
+      --text:#f2f6ff;
+      --muted:#aab6c6;
+      --accent:#00e5ff;
+      --ok:#00c853;
+      --warn:#ffab00;
+      --bad:#ff1744;
+
+      --radius:18px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+      --focus: rgba(0,229,255,.55);
+      --focusBg: rgba(0,229,255,.12);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(0,229,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 80% 0%, rgba(0,200,83,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    button, input, select{ font:inherit; color:inherit; }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:18px 14px 30px;
+    }
+
+    /* Topbar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px solid rgba(34,48,67,.7);
+      border-radius: var(--radius);
+      background: rgba(15,22,32,.75);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 50;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .logo{
+      width:38px; height:38px;
+      border-radius:12px;
+      background: linear-gradient(135deg, rgba(0,229,255,.25), rgba(0,200,83,.18));
+      border:1px solid rgba(34,48,67,.8);
+      display:grid; place-items:center;
+      box-shadow: var(--shadow);
+      flex:0 0 auto;
+    }
+    .logo svg{ opacity:.95; }
+    .brand .t{
+      line-height:1.05;
+      min-width:0;
+    }
+    .brand .t strong{
+      display:block;
+      font-size:14px;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand .t span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .actions{ display:flex; gap:8px; flex:0 0 auto; align-items:center; }
+    .btn{
+      border:1px solid rgba(34,48,67,.9);
+      background: rgba(18,26,35,.85);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:650;
+      font-size:12px;
+      cursor:pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(0,229,255,.55);
+      background: rgba(0,229,255,.10);
+    }
+    .btn.icon{
+      padding:10px 10px;
+      width:40px;
+      justify-content:center;
+    }
+
+    /* Submenu */
+    .menu{
+      position:absolute;
+      top: calc(100% + 10px);
+      right: 10px;
+      width: 280px;
+      border-radius: 16px;
+      background: rgba(15,22,32,.92);
+      border:1px solid rgba(34,48,67,.9);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:none;
+    }
+    .menu.open{ display:block; }
+    .menu .hd{
+      padding:12px 12px 10px;
+      border-bottom:1px solid rgba(34,48,67,.7);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .menu .hd strong{ font-size:13px; letter-spacing:.2px; }
+    .menu .hd span{ font-size:12px; color:var(--muted); }
+    .menu .items{ padding:10px; display:grid; gap:8px; }
+    .menu a.item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border-radius: 14px;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(18,26,35,.55);
+    }
+    .menu a.item:hover{ border-color: rgba(0,229,255,.35); background: rgba(0,229,255,.07); }
+    .menu .k{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .menu .k .ic{
+      width:28px; height:28px;
+      border-radius:10px;
+      display:grid; place-items:center;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(15,22,32,.6);
+      flex:0 0 auto;
+    }
+    .menu .k .tx{
+      min-width:0;
+    }
+    .menu .k .tx b{
+      display:block;
+      font-size:12.5px;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .menu .k .tx small{
+      display:block;
+      color:var(--muted);
+      font-size:11.5px;
+      margin-top:2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .menu .chev{ color: var(--muted); font-size:14px; }
+
+    /* Layout */
+    .grid{
+      display:grid;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media(min-width: 900px){
+      .grid{
+        grid-template-columns: 1.2fr .8fr;
+        align-items:start;
+      }
+    }
+
+    .card{
+      border:1px solid rgba(34,48,67,.85);
+      background: rgba(18,26,35,.75);
+      border-radius: var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .card h3{
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+    .card p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13px;
+    }
+    .muted{ color:var(--muted); }
+
+    /* Hero */
+    .hero{
+      padding:16px;
+      border-radius: var(--radius);
+      border:1px solid rgba(34,48,67,.85);
+      background:
+        linear-gradient(180deg, rgba(0,229,255,.12), rgba(0,0,0,0)),
+        rgba(15,22,32,.75);
+      box-shadow: var(--shadow);
+    }
+    .hero h1{
+      margin:0 0 10px;
+      font-size:22px;
+      line-height:1.12;
+      letter-spacing:.2px;
+    }
+    .hero .sub{
+      margin:0;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13.5px;
+    }
+
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:12px;
+    }
+    .chip{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(34,48,67,.9);
+      background: rgba(18,26,35,.65);
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:99px;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(255,171,0,.12);
+      flex:0 0 auto;
+    }
+    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 4px rgba(0,200,83,.12); }
+    .dot.bad{ background: var(--bad); box-shadow: 0 0 0 4px rgba(255,23,68,.12); }
+
+    /* Columns blocks */
+    .cols{
+      display:grid;
+      gap:12px;
+    }
+    @media(min-width: 700px){
+      .cols{ grid-template-columns: 1fr 1fr; }
+    }
+    .mini{
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.75);
+      border-radius: 16px;
+      padding:14px;
+    }
+    .mini ul{
+      margin:0;
+      padding:0 0 0 16px;
+      color:var(--muted);
+      line-height:1.55;
+      font-size:13px;
+    }
+    .mini li{ margin:4px 0; }
+
+    /* Chart */
+    .chartWrap{
+      margin-top:10px;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(15,22,32,.65);
+      border-radius: 16px;
+      overflow:hidden;
+    }
+    canvas{
+      display:block;
+      width:100%;
+      height:220px;
+    }
+    .chartBar{
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-top:1px solid rgba(34,48,67,.7);
+      color:var(--muted);
+      font-size:12px;
+      flex-wrap:wrap;
+    }
+    .seg{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .pillBtn{
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(18,26,35,.55);
+      padding:8px 10px;
+      border-radius: 999px;
+      cursor:pointer;
+      color: var(--text);
+      font-weight:700;
+      font-size:12px;
+    }
+    .pillBtn.active{
+      border-color: rgba(0,229,255,.55);
+      background: rgba(0,229,255,.10);
+    }
+    .legend{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:10px;
+      color: var(--muted);
+      font-size:12px;
+    }
+    .pill{
+      display:flex; align-items:center; gap:8px;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(15,22,32,.65);
+      padding:8px 10px;
+      border-radius: 999px;
+    }
+
+    /* Forms */
+    .form{
+      margin-top:10px;
+      display:grid;
+      gap:10px;
+    }
+    .row2{
+      display:grid;
+      gap:10px;
+    }
+    @media(min-width: 650px){
+      .row2{ grid-template-columns: 1fr 1fr; }
+    }
+    .field{
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.8);
+      border-radius: 16px;
+      padding:10px;
+    }
+    .field label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color: var(--muted);
+      margin-bottom:8px;
+    }
+    .field label b{
+      color: var(--text);
+      font-size:12.5px;
+      letter-spacing:.2px;
+    }
+    .field input, .field select{
+      width:100%;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(34,48,67,.85);
+      background: rgba(18,26,35,.6);
+      outline: none;
+    }
+    .field input:focus, .field select:focus{
+      border-color: var(--focus);
+      box-shadow: 0 0 0 4px var(--focusBg);
+    }
+    .hint{
+      margin-top:8px;
+      color: var(--muted);
+      font-size:11.5px;
+      line-height:1.35;
+    }
+    .err{
+      margin-top:8px;
+      font-size:11.5px;
+      color: rgba(255,23,68,.95);
+      line-height:1.35;
+      display:none;
+    }
+    .err.show{ display:block; }
+
+    /* Results */
+    .results{
+      margin-top:10px;
+      display:grid;
+      gap:10px;
+    }
+    .resultBox{
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.8);
+      border-radius: 16px;
+      padding:12px;
+    }
+    .resultBox .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(18,26,35,.55);
+      font-size:12px;
+      font-weight:800;
+    }
+    .tag.ok{ border-color: rgba(0,200,83,.55); background: rgba(0,200,83,.10); }
+    .tag.warn{ border-color: rgba(255,171,0,.55); background: rgba(255,171,0,.10); }
+    .tag.bad{ border-color: rgba(255,23,68,.55); background: rgba(255,23,68,.10); }
+    .vals{
+      display:grid;
+      gap:10px;
+    }
+    @media(min-width: 650px){
+      .vals{ grid-template-columns: 1fr 1fr; }
+    }
+    .bigVal{
+      border:1px solid rgba(34,48,67,.75);
+      background: rgba(18,26,35,.55);
+      border-radius: 16px;
+      padding:12px;
+    }
+    .bigVal .k{ color: var(--muted); font-size:12px; }
+    .bigVal .v{
+      margin-top:6px;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:-.3px;
+      color: var(--accent);
+    }
+    .bigVal .u{ color: var(--muted); font-size:11.5px; margin-top:6px; line-height:1.35; }
+
+    /* Table */
+    table{
+      width:100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow:hidden;
+      border-radius: 16px;
+      border:1px solid rgba(34,48,67,.75);
+      margin-top:10px;
+      background: rgba(15,22,32,.65);
+    }
+    th, td{
+      padding:10px 10px;
+      text-align:left;
+      font-size:12px;
+      color: var(--muted);
+      border-bottom:1px solid rgba(34,48,67,.55);
+      vertical-align:top;
+      white-space:nowrap;
+    }
+    th{ color: rgba(242,246,255,.9); font-weight:800; }
+    tr:last-child td{ border-bottom:none; }
+    td b{ color: rgba(242,246,255,.92); font-weight:800; }
+
+    /* Footer note / code box */
+    .footerNote{
+      margin-top:14px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.55;
+    }
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(242,246,255,.9);
+      background: rgba(15,22,32,.7);
+      border:1px solid rgba(34,48,67,.75);
+      border-radius: 14px;
+      padding:12px;
+      overflow:auto;
+      margin-top:10px;
+      white-space: pre;
+    }
+
+    /* Sticky mobile bottom status */
+    .bottom{
+      position: sticky;
+      bottom: 10px;
+      margin-top: 14px;
+      border-radius: 999px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: rgba(15,22,32,.75);
+      border:1px solid rgba(34,48,67,.85);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      z-index: 10;
+    }
+    .bottom .left{
+      display:flex; align-items:center; gap:10px;
+      min-width:0;
+    }
+    .bottom .left .s{
+      min-width:0;
+      color: var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .bottom .right{
+      font-size:12px;
+      font-weight:800;
+      color: var(--text);
+      white-space:nowrap;
+    }
+
+    /* Small helpers */
+    .sp10{ height:10px; }
+    .hr{
+      height:1px;
+      background: rgba(34,48,67,.6);
+      margin:12px 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="topbar" id="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z" stroke="rgba(242,246,255,.9)" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="t">
+          <strong>Predicción y Tendencias (PWA)</strong>
+          <span>Consumo horario · Random Forest + XGBoost · Lecturas desde /api/readings</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btnRefresh">Actualizar</button>
+        <button class="btn primary" id="btnPredict">Predecir</button>
+        <button class="btn icon" id="btnMenu" aria-label="Abrir menú" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 7h14M5 12h14M5 17h14" stroke="rgba(242,246,255,.9)" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="menu" id="menu" role="menu" aria-label="Submenú">
+        <div class="hd">
+          <div>
+            <strong>Navegación</strong><br/>
+            <span id="menuSub">PWA · Online/Offline</span>
+          </div>
+          <button class="btn icon" id="btnCloseMenu" aria-label="Cerrar menú" style="width:36px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="rgba(242,246,255,.9)" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="items">
+          <a class="item" href="./index.html" role="menuitem">
+            <div class="k">
+              <span class="ic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z" stroke="rgba(242,246,255,.85)" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="tx">
+                <b>Inicio</b>
+                <small>Dashboard principal</small>
+              </span>
+            </div>
+            <span class="chev">›</span>
+          </a>
+
+          <a class="item" href="./prediccion.html" role="menuitem" aria-current="page">
+            <div class="k">
+              <span class="ic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 19V5M4 19h16M8 15l3-3 3 2 4-6" stroke="rgba(242,246,255,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="tx">
+                <b>Predicción</b>
+                <small>Modelos + tendencias</small>
+              </span>
+            </div>
+            <span class="chev">›</span>
+          </a>
+
+          <a class="item" href="./datos.html" role="menuitem">
+            <div class="k">
+              <span class="ic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="rgba(242,246,255,.85)" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="tx">
+                <b>Datos</b>
+                <small>Historial y exportación</small>
+              </span>
+            </div>
+            <span class="chev">›</span>
+          </a>
+
+          <a class="item" href="./config.html" role="menuitem">
+            <div class="k">
+              <span class="ic">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" stroke="rgba(242,246,255,.85)" stroke-width="1.6"/>
+                  <path d="M19.4 15a7.8 7.8 0 0 0 .1-1l2-1.6-2-3.5-2.5 1a7.8 7.8 0 0 0-1.7-1l-.4-2.7H9.1l-.4 2.7a7.8 7.8 0 0 0-1.7 1l-2.5-1-2 3.5 2 1.6a7.8 7.8 0 0 0 .1 1 7.8 7.8 0 0 0-.1 1l-2 1.6 2 3.5 2.5-1a7.8 7.8 0 0 0 1.7 1l.4 2.7h5.8l.4-2.7a7.8 7.8 0 0 0 1.7-1l2.5 1 2-3.5-2-1.6a7.8 7.8 0 0 0-.1-1z" stroke="rgba(242,246,255,.55)" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="tx">
+                <b>Configuración</b>
+                <small>API, dispositivo, offline</small>
+              </span>
+            </div>
+            <span class="chev">›</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero" style="margin-top:14px;">
+      <h1>Predicción del consumo: tendencias, picos y pronóstico (t+1 y t+24)</h1>
+      <p class="sub">
+        Esta pantalla toma tus lecturas desde el backend y construye un resumen temporal (por hora) para visualizar tendencias.
+        Luego permite ejecutar predicciones con dos modelos (XGBoost y Random Forest) usando datos reales o valores ingresados.
+      </p>
+
+      <div class="chips">
+        <div class="chip"><span class="dot" id="dotSystem"></span>Estado del sistema</div>
+        <div class="chip"><span class="dot ok"></span>Lectura: /api/readings (con fallbacks)</div>
+        <div class="chip"><span class="dot" id="dotModels"></span>Modelos: XGB + RF (server o fallback)</div>
+        <div class="chip">Pronóstico: consumo horario (kWh)</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>Información completa de los modelos predictivos</h2>
+          <p>
+            El enfoque está orientado a pronosticar el <b>consumo energético horario</b>. Se apoya en variables temporales
+            (hora del día y día de la semana) y en variables eléctricas medidas (voltaje, corriente, potencia, energía activa).
+            Para el modelado se comparan <b>Random Forest Regressor</b> y <b>XGBoost Regressor</b>, usando validación cruzada temporal.
+          </p>
+
+          <div class="cols" style="margin-top:12px;">
+            <div class="mini">
+              <h3>Qué se predice (target)</h3>
+              <ul>
+                <li><b>Consumo energético horario</b> (kWh) por laboratorio/dispositivo.</li>
+                <li>Pronóstico <b>t+1</b> (siguiente hora) y <b>t+24</b> (siguiente día).</li>
+                <li>Útil para anticipar <b>picos</b> y optimizar gestión energética.</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>Variables típicas (features)</h3>
+              <ul>
+                <li><b>Hora del día</b> (0–23) y <b>día de la semana</b> (0–6).</li>
+                <li><b>Potencia</b> (W), <b>voltaje</b> (V), <b>corriente</b> (A).</li>
+                <li><b>Energía activa</b> (Wh / kWh) y opcional: <b>tipo de carga</b>, <b>temperatura</b>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="cols">
+            <div class="mini">
+              <h3>Preparación de datos (resumen)</h3>
+              <ul>
+                <li>Se agrupan lecturas a nivel horario: <b>promedios</b> y <b>máximos</b>.</li>
+                <li>Normalización Min-Max (0–1) y outliers con Z-score.</li>
+                <li>Se generan curvas de carga para detectar patrones/picos.</li>
+              </ul>
+            </div>
+            <div class="mini">
+              <h3>Evaluación y criterio</h3>
+              <ul>
+                <li>Métricas: <b>RMSE</b>, <b>MAE</b> y <b>MAPE</b>.</li>
+                <li>Referencia: <b>MAPE ≤ 10%</b> como umbral de aceptación.</li>
+                <li>Se revisa estabilidad por día de la semana y sesgos.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="code" id="modelBox">
+Modelos comparados:
+  - Random Forest Regressor (100–500 árboles, profundidad 3–10)
+  - XGBoost Regressor (learning rate 0.05–0.10, árboles 100–500, profundidad 3–10)
+
+Validación:
+  - Cross-validation temporal (rolling window)
+
+Salida deseada:
+  - Predicción de consumo horario (kWh): t+1 y t+24
+          </div>
+
+          <div class="footerNote" id="noteModelSource">
+            Estado: este módulo intenta usar endpoints de predicción del backend. Si no existen, usa un modo local para que el dashboard no quede vacío.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Ingresar datos y predecir (validación estricta)</h2>
+          <p>
+            Puedes predecir usando el último dato real (autocompletar) o ingresando valores manualmente.
+            El formulario impide valores fuera de rango para mantener predicciones consistentes en ambos modelos.
+          </p>
+
+          <div class="form">
+            <div class="row2">
+              <div class="field">
+                <label>
+                  <span><b>Modo de entrada</b></span>
+                  <span class="muted" id="modeHint">Auto / Manual</span>
+                </label>
+                <select id="inMode">
+                  <option value="auto">Autocompletar con última lectura</option>
+                  <option value="manual">Ingresar manualmente</option>
+                </select>
+                <div class="hint">En modo Auto se usa tu último registro real desde la API.</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span><b>Horizonte</b></span>
+                  <span class="muted">t+1 / t+24</span>
+                </label>
+                <select id="horizon">
+                  <option value="both">Predecir t+1 y t+24</option>
+                  <option value="t1">Solo t+1 (1 hora)</option>
+                  <option value="t24">Solo t+24 (24 horas)</option>
+                </select>
+                <div class="hint">Se devuelve consumo horario en kWh (o unidad que entregue tu backend).</div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>
+                  <span><b>Voltaje (V)</b></span>
+                  <span class="muted">90–260</span>
+                </label>
+                <input id="v" type="number" step="0.1" min="90" max="260" placeholder="Ej: 120.0" />
+                <div class="hint">Rango típico en redes 110–250V.</div>
+                <div class="err" id="errV">Voltaje inválido (90–260 V).</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span><b>Corriente (A)</b></span>
+                  <span class="muted">0–100</span>
+                </label>
+                <input id="i" type="number" step="0.01" min="0" max="100" placeholder="Ej: 3.25" />
+                <div class="hint">No se admiten negativos.</div>
+                <div class="err" id="errI">Corriente inválida (0–100 A).</div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>
+                  <span><b>Potencia (W)</b></span>
+                  <span class="muted">0–30000</span>
+                </label>
+                <input id="p" type="number" step="0.1" min="0" max="30000" placeholder="Ej: 420.5" />
+                <div class="hint">Si no tienes potencia, se estima con V×I (asumiendo PF≈1).</div>
+                <div class="err" id="errP">Potencia inválida (0–30000 W).</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span><b>Energía activa (kWh)</b></span>
+                  <span class="muted">≥ 0</span>
+                </label>
+                <input id="e" type="number" step="0.001" min="0" placeholder="Ej: 0.250" />
+                <div class="hint">Si tu API usa Wh, el sistema intenta convertir automáticamente.</div>
+                <div class="err" id="errE">Energía inválida (no puede ser negativa).</div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>
+                  <span><b>Hora del día</b></span>
+                  <span class="muted">0–23</span>
+                </label>
+                <input id="hour" type="number" step="1" min="0" max="23" placeholder="Ej: 14" />
+                <div class="hint">Se autocompleta desde la fecha del dato real.</div>
+                <div class="err" id="errH">Hora inválida (0–23).</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span><b>Día de la semana</b></span>
+                  <span class="muted">0–6</span>
+                </label>
+                <select id="dow">
+                  <option value="0">Domingo (0)</option>
+                  <option value="1">Lunes (1)</option>
+                  <option value="2">Martes (2)</option>
+                  <option value="3">Miércoles (3)</option>
+                  <option value="4">Jueves (4)</option>
+                  <option value="5">Viernes (5)</option>
+                  <option value="6">Sábado (6)</option>
+                </select>
+                <div class="hint">Se autocompleta con la fecha del dato.</div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>
+                  <span><b>Tipo de carga</b></span>
+                  <span class="muted">categoría</span>
+                </label>
+                <select id="loadType">
+                  <option value="computo">Cómputo (PCs / monitores)</option>
+                  <option value="iluminacion">Iluminación</option>
+                  <option value="equipos">Equipos auxiliares</option>
+                  <option value="mixta">Mixta</option>
+                </select>
+                <div class="hint">Si tu backend no usa este campo, se ignora.</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span><b>Temperatura (°C)</b> <span class="muted">(opcional)</span></span>
+                  <span class="muted">0–60</span>
+                </label>
+                <input id="temp" type="number" step="0.1" min="0" max="60" placeholder="Ej: 26.0" />
+                <div class="hint">Se envía solo si la ingresas. Se valida 0–60°C.</div>
+                <div class="err" id="errT">Temperatura inválida (0–60 °C).</div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <button class="btn primary" id="btnRun" style="justify-content:center;">Ejecutar predicción (XGB + RF)</button>
+              <button class="btn" id="btnFill" style="justify-content:center;">Autocompletar desde último dato</button>
+            </div>
+
+            <div class="footerNote" id="formStatus">Estado: listo.</div>
+          </div>
+
+          <div class="results" id="results">
+            <div class="resultBox">
+              <div class="top">
+                <div>
+                  <div class="tag" id="tagXgb"><span class="dot" id="dotXgb"></span> XGBoost</div>
+                  <div class="muted" style="margin-top:8px; font-size:12px;" id="srcXgb">Fuente: —</div>
+                </div>
+                <div class="muted" style="text-align:right; font-size:12px; line-height:1.35;" id="metaPred">
+                  Última lectura: —<br/>Endpoint lectura: —<br/>Endpoint predicción: —
+                </div>
+              </div>
+              <div class="vals">
+                <div class="bigVal">
+                  <div class="k">Predicción t+1</div>
+                  <div class="v" id="xgbT1">—</div>
+                  <div class="u" id="xgbT1U">Consumo horario (kWh)</div>
+                </div>
+                <div class="bigVal">
+                  <div class="k">Predicción t+24</div>
+                  <div class="v" id="xgbT24">—</div>
+                  <div class="u" id="xgbT24U">Consumo horario (kWh)</div>
+                </div>
+              </div>
+              <div class="footerNote" id="xgbNote">—</div>
+            </div>
+
+            <div class="resultBox">
+              <div class="top">
+                <div>
+                  <div class="tag" id="tagRf"><span class="dot" id="dotRf"></span> Random Forest</div>
+                  <div class="muted" style="margin-top:8px; font-size:12px;" id="srcRf">Fuente: —</div>
+                </div>
+                <div class="muted" style="text-align:right; font-size:12px; line-height:1.35;" id="metaPred2">
+                  Modo: —<br/>Unidad: —<br/>Estado: —
+                </div>
+              </div>
+              <div class="vals">
+                <div class="bigVal">
+                  <div class="k">Predicción t+1</div>
+                  <div class="v" id="rfT1">—</div>
+                  <div class="u" id="rfT1U">Consumo horario (kWh)</div>
+                </div>
+                <div class="bigVal">
+                  <div class="k">Predicción t+24</div>
+                  <div class="v" id="rfT24">—</div>
+                  <div class="u" id="rfT24U">Consumo horario (kWh)</div>
+                </div>
+              </div>
+              <div class="footerNote" id="rfNote">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Tendencias y visualización</h2>
+          <p>
+            Se construye una serie temporal con lecturas recientes. El gráfico muestra potencia estimada (W) y consumo horario estimado (kWh/h).
+            Puedes cambiar el rango sin recargar la página.
+          </p>
+
+          <div class="chartWrap">
+            <canvas id="chart" width="1000" height="220"></canvas>
+            <div class="chartBar">
+              <div class="seg">
+                <button class="pillBtn active" data-range="1h" id="r1h">1h</button>
+                <button class="pillBtn" data-range="6h" id="r6h">6h</button>
+                <button class="pillBtn" data-range="24h" id="r24h">24h</button>
+                <button class="pillBtn" data-range="7d" id="r7d">7d</button>
+              </div>
+              <div id="chartMeta">—</div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="pill"><span class="dot ok"></span>Potencia (W)</div>
+            <div class="pill"><span class="dot"></span>Consumo (kWh/h)</div>
+            <div class="pill"><span class="dot bad"></span>Picos (percentil 95)</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>V</th>
+                <th>I</th>
+                <th>P</th>
+                <th>E</th>
+              </tr>
+            </thead>
+            <tbody id="tbl">
+              <tr><td colspan="5" class="muted">Esperando datos…</td></tr>
+            </tbody>
+          </table>
+
+          <div class="footerNote" id="trendNote">Estado: esperando lectura desde API.</div>
+        </div>
+
+        <div class="card">
+          <h2>API configurada</h2>
+          <p>
+            Esta pantalla intenta detectar automáticamente tu endpoint de lectura. Puedes fijarlo en <b>API_BASE</b>.
+          </p>
+          <div class="code" id="apiBox">API_BASE = (configurable en JS)</div>
+          <div class="footerNote" id="apiResolved">Lectura detectada: —</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="left">
+        <span class="dot" id="dotBottom"></span>
+        <div class="s" id="bottomText">Inicializando…</div>
+      </div>
+      <div class="right" id="bottomRight">PWA Ready</div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==============================
+     * CONFIGURACION
+     * ==============================
+     * Cambia SOLO si tu backend no es este:
+     */
+    const API_BASE = "https://iot-backend-ynkx.onrender.com";
+
+    /**
+     * Endpoints candidatos (lectura)
+     * Se prueban en orden hasta que uno responda con datos.
+     */
+    const READ_ENDPOINT_CANDIDATES = [
+      "/api/readings?limit={N}",
+      "/api/readings/latest?limit={N}",
+      "/api/readings/recent?limit={N}",
+      "/api/telemetry?limit={N}",
+      "/api/telemetry/latest?limit={N}",
+      "/api/telemetry/latest",
+      "/api/readings/latest",
+      "/api/latest",
+      "/api/last"
+    ];
+
+    /**
+     * Endpoints candidatos (predicción)
+     * Se prueban en orden por modelo.
+     */
+    const PRED_ENDPOINTS = {
+      xgb: [
+        "/api/predict/xgb",
+        "/api/predict?model=xgb",
+        "/api/prediction/xgb",
+        "/api/models/xgb/predict"
+      ],
+      rf: [
+        "/api/predict/rf",
+        "/api/predict?model=rf",
+        "/api/prediction/rf",
+        "/api/models/rf/predict"
+      ]
+    };
+
+    const POLL_MS = 6000;
+
+    const TH_OK = 1;
+    const TH_WARN = 3;
+
+    const el = (id) => document.getElementById(id);
+
+    function setDotState(dotEl, state){
+      dotEl.classList.remove("ok","bad");
+      if(state === "ok") dotEl.classList.add("ok");
+      else if(state === "bad") dotEl.classList.add("bad");
+    }
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function toIsoLocal(d){
+      const z = (x)=> String(x).padStart(2,"0");
+      return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+    }
+
+    function fmtNum(x, digits=2){
+      if(x === null || x === undefined || Number.isNaN(x)) return "—";
+      return Number(x).toFixed(digits);
+    }
+
+    function fmtKwh(x){
+      if(x === null || x === undefined || Number.isNaN(x)) return "—";
+      if(x < 0.001) return (x*1000).toFixed(2) + " Wh";
+      return x.toFixed(3) + " kWh";
+    }
+
+    function horizonLabel(h){
+      if(h === "t1") return "t+1";
+      if(h === "t24") return "t+24";
+      return "t+1 y t+24";
+    }
+
+    async function fetchWithTimeout(url, opts={}, ms=9000){
+      const ac = new AbortController();
+      const id = setTimeout(()=>ac.abort(), ms);
+      try{
+        const res = await fetch(url, { ...opts, signal: ac.signal, cache: "no-store" });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
+    async function fetchJSON(url, opts={}, ms=9000){
+      const res = await fetchWithTimeout(url, opts, ms);
+      const txt = await res.text();
+      let json = null;
+      try{ json = txt ? JSON.parse(txt) : null; }catch(_){ json = null; }
+      return { ok: res.ok, status: res.status, json, text: txt };
+    }
+
+    function pick(obj, keys){
+      for(const k of keys){
+        if(obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+      }
+      return null;
+    }
+
+    function inferV(r){
+      const v = pick(r, ["v", "voltage", "voltaje", "vrms", "v_rms", "V", "voltage_rms"]);
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function inferI(r){
+      const i = pick(r, ["i", "current", "corriente", "irms", "i_rms", "I", "current_rms"]);
+      const n = Number(i);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function inferP(r){
+      const p = pick(r, ["p", "power", "potencia", "p_w", "power_w", "P", "active_power_w"]);
+      const n = Number(p);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function inferEraw(r){
+      return pick(r, ["e", "energy", "energia", "energia_activa", "energy_active", "energy_wh", "energia_wh", "e_wh", "energy_kwh", "energia_kwh"]);
+    }
+
+    function inferE_kWh(r){
+      const raw = inferEraw(r);
+      const n = Number(raw);
+      if(!Number.isFinite(n)) return null;
+
+      const key = (() => {
+        const entries = ["e", "energy", "energia", "energia_activa", "energy_active", "energy_wh", "energia_wh", "e_wh", "energy_kwh", "energia_kwh"];
+        for(const k of entries){ if(r && r[k] !== undefined && r[k] !== null) return k; }
+        return "";
+      })();
+
+      if(key.includes("wh") || key === "e_wh" || key === "energy_wh" || key === "energia_wh"){
+        return n / 1000;
+      }
+      return n;
+    }
+
+    function inferTS(r){
+      const ts = pick(r, ["ts", "timestamp", "time", "createdAt", "created_at", "date"]);
+      if(!ts) return null;
+      const d = new Date(ts);
+      return Number.isFinite(d.getTime()) ? d.getTime() : null;
+    }
+
+    function normalizeReading(r){
+      const tsMs = inferTS(r);
+      const ts = tsMs ? new Date(tsMs) : new Date();
+      const v = inferV(r);
+      const i = inferI(r);
+      let p = inferP(r);
+      const eKwh = inferE_kWh(r);
+
+      if(p === null && v !== null && i !== null){
+        p = v * i;
+      }
+
+      return {
+        raw: r,
+        tsMs: ts.getTime(),
+        ts,
+        v,
+        i,
+        p,
+        eKwh,
+        deviceId: pick(r, ["deviceId","device_id","device","deviceID"]) ?? null
+      };
+    }
+
+    function toHourKey(tsMs){
+      const d = new Date(tsMs);
+      const z = (x)=>String(x).padStart(2,"0");
+      return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}`;
+    }
+
+    function groupHourly(readings){
+      const m = new Map();
+      for(const rr of readings){
+        const hk = toHourKey(rr.tsMs);
+        if(!m.has(hk)){
+          m.set(hk, {
+            hourKey: hk,
+            tsMs: new Date(hk.replace("T"," ") + ":00:00").getTime(),
+            n:0,
+            pSum:0,
+            pMax: null,
+            vSum:0,
+            iSum:0
+          });
+        }
+        const g = m.get(hk);
+        g.n += 1;
+
+        if(Number.isFinite(rr.p)){
+          g.pSum += rr.p;
+          g.pMax = (g.pMax === null) ? rr.p : Math.max(g.pMax, rr.p);
+        }
+        if(Number.isFinite(rr.v)) g.vSum += rr.v;
+        if(Number.isFinite(rr.i)) g.iSum += rr.i;
+      }
+
+      const out = Array.from(m.values()).sort((a,b)=>a.tsMs-b.tsMs);
+      for(const g of out){
+        g.pAvg = g.n ? (g.pSum / g.n) : null;
+        g.vAvg = g.n ? (g.vSum / g.n) : null;
+        g.iAvg = g.n ? (g.iSum / g.n) : null;
+
+        // consumo horario aproximado (kWh/h) = potencia_media(W) * 1h / 1000
+        g.kwh_h = (Number.isFinite(g.pAvg)) ? (g.pAvg / 1000) : null;
+      }
+      return out;
+    }
+
+    function percentile(arr, p){
+      const a = arr.filter(x=>Number.isFinite(x)).slice().sort((x,y)=>x-y);
+      if(!a.length) return null;
+      const idx = (a.length - 1) * p;
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      if(lo === hi) return a[lo];
+      const w = idx - lo;
+      return a[lo]*(1-w) + a[hi]*w;
+    }
+
+    function drawChart(series, rangeLabel){
+      const c = el("chart");
+      const ctx = c.getContext("2d");
+
+      const w = c.width, h = c.height;
+      ctx.clearRect(0,0,w,h);
+
+      // Frame
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(34,48,67,.9)";
+      ctx.strokeRect(0.5,0.5,w-1,h-1);
+
+      const padL = 40, padR = 16, padT = 12, padB = 26;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+
+      const xs = series.map(s=>s.tsMs);
+      const pVals = series.map(s=>s.pAvg);
+      const kVals = series.map(s=>s.kwh_h);
+
+      const xMin = Math.min(...xs);
+      const xMax = Math.max(...xs);
+
+      const pMax = Math.max(1, ...pVals.filter(Number.isFinite));
+      const kMax = Math.max(0.001, ...kVals.filter(Number.isFinite));
+      const p95 = percentile(pVals, 0.95);
+
+      function xScale(x){
+        if(xMax === xMin) return padL;
+        return padL + ((x - xMin) / (xMax - xMin)) * innerW;
+      }
+      function yScaleP(p){
+        const v = (Number.isFinite(p) ? p : 0);
+        return padT + (1 - (v / pMax)) * innerH;
+      }
+      function yScaleK(k){
+        const v = (Number.isFinite(k) ? k : 0);
+        return padT + (1 - (v / kMax)) * innerH;
+      }
+
+      // Grid
+      ctx.strokeStyle = "rgba(34,48,67,.45)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for(let i=0;i<=4;i++){
+        const yy = padT + (innerH/4)*i;
+        ctx.moveTo(padL, yy);
+        ctx.lineTo(padL + innerW, yy);
+      }
+      ctx.stroke();
+
+      // Left axis labels (P)
+      ctx.fillStyle = "rgba(242,246,255,.85)";
+      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("W", 8, padT+2);
+
+      ctx.fillStyle = "rgba(170,182,198,.9)";
+      ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      for(let i=0;i<=4;i++){
+        const yy = padT + (innerH/4)*i;
+        const val = Math.round(pMax * (1 - i/4));
+        ctx.fillText(String(val), 8, yy);
+      }
+
+      // Line P (ok)
+      ctx.strokeStyle = "rgba(0,200,83,.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      for(const s of series){
+        const x = xScale(s.tsMs);
+        const y = yScaleP(s.pAvg);
+        if(!started){
+          ctx.moveTo(x,y);
+          started = true;
+        } else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // Line kWh/h (warn)
+      ctx.strokeStyle = "rgba(255,171,0,.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      started = false;
+      for(const s of series){
+        const x = xScale(s.tsMs);
+        const y = yScaleK(s.kwh_h);
+        if(!started){
+          ctx.moveTo(x,y);
+          started = true;
+        } else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // p95 markers (bad)
+      if(Number.isFinite(p95)){
+        ctx.fillStyle = "rgba(255,23,68,.95)";
+        for(const s of series){
+          if(Number.isFinite(s.pAvg) && s.pAvg >= p95){
+            const x = xScale(s.tsMs);
+            const y = yScaleP(s.pAvg);
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      }
+
+      // X ticks
+      ctx.fillStyle = "rgba(170,182,198,.95)";
+      ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      const ticks = 4;
+      for(let i=0;i<=ticks;i++){
+        const t = xMin + (xMax-xMin)*(i/ticks);
+        const d = new Date(t);
+        const label = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+        const x = xScale(t);
+        ctx.fillText(label, x, padT + innerH + 6);
+      }
+
+      const last = series[series.length-1];
+      const first = series[0];
+
+      el("chartMeta").textContent =
+        `Rango: ${rangeLabel} · Pmax: ${Math.round(pMax)}W · Último: ${last ? toIsoLocal(new Date(last.tsMs)) : "—"}`;
+
+      return { pMax, kMax, p95, first, last };
+    }
+
+    function renderTable(readings){
+      const tb = el("tbl");
+      if(!readings.length){
+        tb.innerHTML = `<tr><td colspan="5" class="muted">Sin datos</td></tr>`;
+        return;
+      }
+
+      const last = readings.slice(-8).reverse();
+      const rows = last.map(rr=>{
+        const d = new Date(rr.tsMs);
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        const time = `${hh}:${mm}`;
+
+        const v = (rr.v !== null) ? fmtNum(rr.v,1)+" V" : "—";
+        const i = (rr.i !== null) ? fmtNum(rr.i,2)+" A" : "—";
+        const p = (rr.p !== null) ? fmtNum(rr.p,1)+" W" : "—";
+        const e = (rr.eKwh !== null) ? fmtKwh(rr.eKwh) : "—";
+
+        return `<tr>
+          <td><b>${time}</b></td>
+          <td>${v}</td>
+          <td>${i}</td>
+          <td>${p}</td>
+          <td>${e}</td>
+        </tr>`;
+      }).join("");
+
+      tb.innerHTML = rows;
+    }
+
+    function rangeMs(label){
+      if(label === "1h") return 1*60*60*1000;
+      if(label === "6h") return 6*60*60*1000;
+      if(label === "24h") return 24*60*60*1000;
+      if(label === "7d") return 7*24*60*60*1000;
+      return 6*60*60*1000;
+    }
+
+    function setActiveRange(label){
+      const ids = ["r1h","r6h","r24h","r7d"];
+      for(const id of ids){
+        const b = el(id);
+        b.classList.toggle("active", b.dataset.range === label);
+      }
+    }
+
+    async function detectReadEndpoint(N){
+      for(const candidate of READ_ENDPOINT_CANDIDATES){
+        const path = candidate.replace("{N}", String(N));
+        const url = API_BASE + path;
+        const r = await fetchJSON(url, {}, 9000);
+        if(!r.ok) continue;
+
+        // posibles formatos:
+        // 1) array
+        // 2) { readings: [] }
+        // 3) objeto único (latest)
+        let arr = null;
+        if(Array.isArray(r.json)) arr = r.json;
+        else if(r.json && Array.isArray(r.json.readings)) arr = r.json.readings;
+        else if(r.json && Array.isArray(r.json.data)) arr = r.json.data;
+        else if(r.json && typeof r.json === "object") arr = [r.json];
+        else arr = null;
+
+        if(arr && arr.length){
+          return { path, sample: arr[0], raw: r.json };
+        }
+      }
+      return null;
+    }
+
+    async function getReadings(N){
+      const found = await detectReadEndpoint(N);
+      if(!found) return { ok:false, endpoint:null, readings:[], error:"No se pudo detectar endpoint de lectura." };
+
+      const url = API_BASE + found.path;
+      const r = await fetchJSON(url, {}, 9000);
+      if(!r.ok) return { ok:false, endpoint:found.path, readings:[], error:`HTTP ${r.status}` };
+
+      let arr = null;
+      if(Array.isArray(r.json)) arr = r.json;
+      else if(r.json && Array.isArray(r.json.readings)) arr = r.json.readings;
+      else if(r.json && Array.isArray(r.json.data)) arr = r.json.data;
+      else if(r.json && typeof r.json === "object") arr = [r.json];
+
+      const normalized = (arr || []).map(normalizeReading).filter(x=>Number.isFinite(x.tsMs));
+      normalized.sort((a,b)=>a.tsMs-b.tsMs);
+
+      return { ok:true, endpoint:found.path, readings:normalized, error:null };
+    }
+
+    function validateInputs(payload){
+      const errs = [];
+
+      const v = payload.v;
+      const i = payload.i;
+      const p = payload.p;
+      const e = payload.e;
+      const hour = payload.hour;
+      const dow = payload.dow;
+      const temp = payload.temp;
+
+      const okV = Number.isFinite(v) && v >= 90 && v <= 260;
+      const okI = Number.isFinite(i) && i >= 0 && i <= 100;
+      const okP = Number.isFinite(p) && p >= 0 && p <= 30000;
+      const okE = (e === null) || (Number.isFinite(e) && e >= 0);
+      const okH = Number.isFinite(hour) && hour >= 0 && hour <= 23;
+      const okD = Number.isFinite(dow) && dow >= 0 && dow <= 6;
+      const okT = (temp === null) || (Number.isFinite(temp) && temp >= 0 && temp <= 60);
+
+      el("errV").classList.toggle("show", !okV);
+      el("errI").classList.toggle("show", !okI);
+      el("errP").classList.toggle("show", !okP);
+      el("errE").classList.toggle("show", !okE);
+      el("errH").classList.toggle("show", !okH);
+      el("errT").classList.toggle("show", !okT);
+
+      if(!okV) errs.push("Voltaje inválido.");
+      if(!okI) errs.push("Corriente inválida.");
+      if(!okP) errs.push("Potencia inválida.");
+      if(!okE) errs.push("Energía inválida.");
+      if(!okH) errs.push("Hora inválida.");
+      if(!okD) errs.push("Día inválido.");
+      if(!okT) errs.push("Temperatura inválida.");
+
+      return { ok: errs.length === 0, errs };
+    }
+
+    function makePayloadFromUI(){
+      const v = Number(el("v").value);
+      const i = Number(el("i").value);
+      let p = Number(el("p").value);
+      let e = el("e").value.trim() === "" ? null : Number(el("e").value);
+
+      const hour = Number(el("hour").value);
+      const dow = Number(el("dow").value);
+      const loadType = el("loadType").value;
+
+      const t = el("temp").value.trim() === "" ? null : Number(el("temp").value);
+
+      if(!Number.isFinite(p) || el("p").value.trim()===""){
+        if(Number.isFinite(v) && Number.isFinite(i)) p = v * i;
+      }
+
+      // Si energía viene muy grande (posible Wh), convertir a kWh
+      if(e !== null && Number.isFinite(e) && e > 200){
+        e = e / 1000;
+      }
+
+      return {
+        v: Number.isFinite(v) ? v : NaN,
+        i: Number.isFinite(i) ? i : NaN,
+        p: Number.isFinite(p) ? p : NaN,
+        e: (e !== null && Number.isFinite(e)) ? e : null,
+        hour: Number.isFinite(hour) ? hour : NaN,
+        dow: Number.isFinite(dow) ? dow : NaN,
+        loadType,
+        temp: (t !== null && Number.isFinite(t)) ? t : null
+      };
+    }
+
+    function stateFromKwh(kwh){
+      if(!Number.isFinite(kwh)) return { label:"—", state:"warn" };
+      if(kwh < TH_OK) return { label:"Óptimo", state:"ok" };
+      if(kwh < TH_WARN) return { label:"Estable", state:"warn" };
+      return { label:"Alto", state:"bad" };
+    }
+
+    function paintTag(tagEl, state){
+      tagEl.classList.remove("ok","warn","bad");
+      if(state === "ok") tagEl.classList.add("ok");
+      else if(state === "bad") tagEl.classList.add("bad");
+      else tagEl.classList.add("warn");
+    }
+
+    async function tryPredictServer(modelKey, payload){
+      const paths = PRED_ENDPOINTS[modelKey] || [];
+      for(const path of paths){
+        const url = API_BASE + path;
+        const r = await fetchJSON(url, {
+          method: "POST",
+          headers: { "content-type":"application/json" },
+          body: JSON.stringify(payload)
+        }, 12000);
+
+        if(!r.ok) continue;
+
+        // formatos esperados:
+        // { t1_kwh, t24_kwh } o { t1, t24 } o { prediction: {...} }
+        const j = r.json;
+        if(!j || typeof j !== "object") continue;
+
+        const t1 = Number(pick(j, ["t1_kwh","t1","pred_t1","next_hour","yhat_t1"]));
+        const t24 = Number(pick(j, ["t24_kwh","t24","pred_t24","next_day","yhat_t24"]));
+
+        const unit = pick(j, ["unit","units"]) ?? "kWh";
+        const meta = pick(j, ["meta","info","model"]) ?? null;
+
+        return {
+          ok: true,
+          path,
+          t1: Number.isFinite(t1) ? t1 : null,
+          t24: Number.isFinite(t24) ? t24 : null,
+          unit,
+          meta,
+          raw: j
+        };
+      }
+      return { ok:false, path:null, t1:null, t24:null, unit:"kWh", meta:null, raw:null };
+    }
+
+    function localPredictorFactory(hourlySeries){
+      // Construye perfiles por hora y día (promedios) para un baseline estable.
+      const byHour = new Map();
+      for(const s of hourlySeries){
+        const d = new Date(s.tsMs);
+        const h = d.getHours();
+        if(!byHour.has(h)) byHour.set(h, []);
+        if(Number.isFinite(s.kwh_h)) byHour.get(h).push(s.kwh_h);
+      }
+
+      const hourMean = new Map();
+      for(const [h, arr] of byHour.entries()){
+        const m = arr.reduce((a,b)=>a+b,0) / Math.max(1, arr.length);
+        hourMean.set(h, m);
+      }
+
+      const overall = (() => {
+        const all = hourlySeries.map(s=>s.kwh_h).filter(Number.isFinite);
+        if(!all.length) return 0.25;
+        return all.reduce((a,b)=>a+b,0)/all.length;
+      })();
+
+      // “RF-like”: robusto por perfil horario + suavizado por potencia actual
+      function predictRF(payload){
+        const base = hourMean.get(payload.hour) ?? overall;
+
+        // ajuste robusto: compara potencia actual vs potencia típica en esa hora
+        const pTypical = (() => {
+          const ps = hourlySeries
+            .filter(s=>{
+              const d = new Date(s.tsMs);
+              return d.getHours() === payload.hour;
+            })
+            .map(s=>s.pAvg)
+            .filter(Number.isFinite);
+
+          if(!ps.length) return null;
+          return percentile(ps, 0.5);
+        })();
+
+        let adj = 0;
+        if(Number.isFinite(payload.p) && Number.isFinite(pTypical) && pTypical > 0){
+          const ratio = clamp(payload.p / pTypical, 0.5, 2.0);
+          adj = base * (ratio - 1) * 0.55;
+        }
+        const t1 = Math.max(0, base + adj);
+
+        // t24: promedio de la misma hora en el histórico (perfil)
+        const t24 = Math.max(0, (hourMean.get(payload.hour) ?? overall) * 1.0);
+
+        return { t1, t24, unit:"kWh", note:"Fallback local (perfil horario + ajuste robusto por potencia)." };
+      }
+
+      // “XGB-like”: no lineal simple con interacciones suaves
+      function predictXGB(payload){
+        const base = hourMean.get(payload.hour) ?? overall;
+
+        const h = payload.hour;
+        const peakFactor = (h >= 9 && h <= 17) ? 1.12 : (h >= 7 && h < 9) ? 1.06 : 0.96;
+
+        const vFactor = Number.isFinite(payload.v) ? clamp((payload.v - 110) / 40, -0.2, 0.2) : 0;
+        const iFactor = Number.isFinite(payload.i) ? clamp((payload.i) / 20, 0, 1.2) : 0;
+
+        const loadBoost = (payload.loadType === "computo") ? 0.08 :
+                          (payload.loadType === "equipos") ? 0.06 :
+                          (payload.loadType === "mixta") ? 0.04 : 0.02;
+
+        const tempBoost = (payload.temp !== null && Number.isFinite(payload.temp)) ? clamp((payload.temp - 24) / 20, -0.08, 0.08) : 0;
+
+        // usa potencia si está
+        let pBoost = 0;
+        if(Number.isFinite(payload.p)){
+          // convierte W a kWh/h (aprox) y aplica saturación
+          const kw = payload.p / 1000;
+          pBoost = clamp((kw - base) / Math.max(0.2, base), -0.3, 0.6);
+        }
+
+        const t1 = Math.max(0, base * peakFactor * (1 + 0.25*pBoost + 0.08*iFactor + 0.05*vFactor + loadBoost + tempBoost));
+        const t24 = Math.max(0, (hourMean.get(payload.hour) ?? overall) * peakFactor);
+
+        return { t1, t24, unit:"kWh", note:"Fallback local (no lineal suave con hora + potencia + tipo de carga)." };
+      }
+
+      return { predictRF, predictXGB };
+    }
+
+    function setPredictionUI(model, out, src){
+      const isXgb = model === "xgb";
+
+      const t1El = el(isXgb ? "xgbT1" : "rfT1");
+      const t24El = el(isXgb ? "xgbT24" : "rfT24");
+
+      const srcEl = el(isXgb ? "srcXgb" : "srcRf");
+      const noteEl = el(isXgb ? "xgbNote" : "rfNote");
+
+      const tagEl = el(isXgb ? "tagXgb" : "tagRf");
+      const dotEl = el(isXgb ? "dotXgb" : "dotRf");
+
+      const unit = out.unit || "kWh";
+
+      t1El.textContent = (out.t1 === null) ? "—" : (Number(out.t1).toFixed(3) + " " + unit);
+      t24El.textContent = (out.t24 === null) ? "—" : (Number(out.t24).toFixed(3) + " " + unit);
+
+      srcEl.textContent = "Fuente: " + src;
+
+      const best = (out.t1 !== null) ? out.t1 : out.t24;
+      const st = stateFromKwh(best);
+
+      setDotState(dotEl, st.state);
+      paintTag(tagEl, st.state);
+
+      noteEl.textContent = out.note || "—";
+    }
+
+    function setMetaPrediction(lastReading, readEndpoint, predEndpointX, predEndpointR){
+      const last = lastReading ? toIsoLocal(new Date(lastReading.tsMs)) : "—";
+      el("metaPred").innerHTML =
+        `Última lectura: ${last}<br/>` +
+        `Endpoint lectura: ${readEndpoint || "—"}<br/>` +
+        `Endpoint predicción: ${predEndpointX || "—"}`;
+
+      el("metaPred2").innerHTML =
+        `Modo: ${predEndpointR ? "Backend" : "Fallback local"}<br/>` +
+        `Unidad: kWh<br/>` +
+        `Estado: ${lastReading ? "OK" : "Sin lectura"}`;
+    }
+
+    function fillFormFromReading(rr){
+      const d = new Date(rr.tsMs);
+      const hour = d.getHours();
+      const dow = d.getDay();
+
+      el("v").value = (rr.v !== null) ? rr.v.toFixed(1) : "";
+      el("i").value = (rr.i !== null) ? rr.i.toFixed(2) : "";
+      el("p").value = (rr.p !== null) ? rr.p.toFixed(1) : "";
+      el("e").value = (rr.eKwh !== null) ? rr.eKwh.toFixed(3) : "";
+      el("hour").value = String(hour);
+      el("dow").value = String(dow);
+    }
+
+    let GLOBAL = {
+      readings: [],
+      hourly: [],
+      lastReading: null,
+      readEndpoint: null,
+      range: "6h",
+      predictor: null
+    };
+
+    async function refreshTrends(){
+      el("apiBox").textContent = `API_BASE = ${API_BASE}`;
+
+      const N = (GLOBAL.range === "7d") ? 6000 : (GLOBAL.range === "24h" ? 2500 : (GLOBAL.range === "6h" ? 1200 : 600));
+      const res = await getReadings(N);
+
+      if(!res.ok){
+        el("trendNote").textContent = `Sin datos desde API. Detalle: ${res.error || "—"}`;
+        setDotState(el("dotSystem"), "bad");
+        setDotState(el("dotBottom"), "bad");
+        el("bottomText").textContent = `Sin conexión de lectura. ${res.error || ""}`;
+        el("apiResolved").textContent = `Lectura detectada: —`;
+        return;
+      }
+
+      GLOBAL.readings = res.readings;
+      GLOBAL.readEndpoint = res.endpoint;
+      GLOBAL.lastReading = res.readings[res.readings.length - 1] || null;
+
+      el("apiResolved").textContent = `Lectura detectada: ${res.endpoint}`;
+      el("bottomText").textContent = `OK · Lecturas: ${res.readings.length} · Endpoint: ${res.endpoint}`;
+      setDotState(el("dotSystem"), "ok");
+      setDotState(el("dotBottom"), "ok");
+
+      // range filter
+      const now = Date.now();
+      const ms = rangeMs(GLOBAL.range);
+      const filtered = res.readings.filter(r => r.tsMs >= (now - ms));
+
+      // hourly aggregation
+      const hourly = groupHourly(filtered);
+      GLOBAL.hourly = hourly;
+
+      // predictor baseline
+      GLOBAL.predictor = localPredictorFactory(hourly);
+
+      // draw
+      if(hourly.length >= 2){
+        drawChart(hourly, GLOBAL.range);
+        el("trendNote").textContent = `Tendencias calculadas: ${hourly.length} puntos horarios · Rango: ${GLOBAL.range}`;
+      } else {
+        // si hay pocas muestras, dibuja con lectura cruda como "pseudo-hora"
+        const pseudo = filtered.slice(-40).map(r=>{
+          return { tsMs: r.tsMs, pAvg: r.p, kwh_h: (Number.isFinite(r.p) ? (r.p/1000) : null) };
+        });
+        if(pseudo.length >= 2){
+          drawChart(pseudo, GLOBAL.range);
+          el("trendNote").textContent = `Tendencias (muestras directas): ${pseudo.length} puntos · Rango: ${GLOBAL.range}`;
+        } else {
+          el("trendNote").textContent = `Datos insuficientes para tendencias.`;
+        }
+      }
+
+      renderTable(filtered);
+
+      // Autocomplete (si está en modo auto)
+      if(el("inMode").value === "auto" && GLOBAL.lastReading){
+        fillFormFromReading(GLOBAL.lastReading);
+      }
+
+      // Estado modelos
+      setDotState(el("dotModels"), "ok");
+      el("menuSub").textContent = navigator.onLine ? "Online" : "Offline";
+    }
+
+    async function runPrediction(){
+      const mode = el("inMode").value;
+
+      if(mode === "auto"){
+        if(!GLOBAL.lastReading){
+          el("formStatus").textContent = "Estado: no hay última lectura para autocompletar.";
+          setDotState(el("dotBottom"), "bad");
+          return;
+        }
+        fillFormFromReading(GLOBAL.lastReading);
+      }
+
+      const payload = makePayloadFromUI();
+      const v = validateInputs(payload);
+
+      if(!v.ok){
+        el("formStatus").textContent = "Estado: corrige los campos inválidos para predecir.";
+        setDotState(el("dotBottom"), "bad");
+        return;
+      }
+
+      setDotState(el("dotBottom"), "ok");
+      el("formStatus").textContent = `Estado: ejecutando predicción (${horizonLabel(el("horizon").value)})…`;
+
+      // Preferir server si existe
+      const horizon = el("horizon").value;
+
+      // Intento XGB server
+      const xgbServer = await tryPredictServer("xgb", payload);
+      const rfServer = await tryPredictServer("rf", payload);
+
+      const hasServerAny = xgbServer.ok || rfServer.ok;
+
+      // XGB result
+      if(xgbServer.ok){
+        const out = {
+          t1: (horizon === "t24") ? null : xgbServer.t1,
+          t24: (horizon === "t1") ? null : xgbServer.t24,
+          unit: xgbServer.unit || "kWh",
+          note: "Respuesta desde backend (modelo XGBoost)."
+        };
+        setPredictionUI("xgb", out, `Backend: ${xgbServer.path}`);
+        el("srcXgb").textContent = `Fuente: backend (${xgbServer.path})`;
+      } else {
+        // Fallback local
+        const outLocal = GLOBAL.predictor ? GLOBAL.predictor.predictXGB(payload) : { t1:null, t24:null, unit:"kWh", note:"Fallback local sin histórico suficiente." };
+        const out = {
+          t1: (horizon === "t24") ? null : outLocal.t1,
+          t24: (horizon === "t1") ? null : outLocal.t24,
+          unit: outLocal.unit,
+          note: outLocal.note
+        };
+        setPredictionUI("xgb", out, "Fallback local");
+      }
+
+      // RF result
+      if(rfServer.ok){
+        const out = {
+          t1: (horizon === "t24") ? null : rfServer.t1,
+          t24: (horizon === "t1") ? null : rfServer.t24,
+          unit: rfServer.unit || "kWh",
+          note: "Respuesta desde backend (modelo Random Forest)."
+        };
+        setPredictionUI("rf", out, `Backend: ${rfServer.path}`);
+        el("srcRf").textContent = `Fuente: backend (${rfServer.path})`;
+      } else {
+        const outLocal = GLOBAL.predictor ? GLOBAL.predictor.predictRF(payload) : { t1:null, t24:null, unit:"kWh", note:"Fallback local sin histórico suficiente." };
+        const out = {
+          t1: (horizon === "t24") ? null : outLocal.t1,
+          t24: (horizon === "t1") ? null : outLocal.t24,
+          unit: outLocal.unit,
+          note: outLocal.note
+        };
+        setPredictionUI("rf", out, "Fallback local");
+      }
+
+      setMetaPrediction(GLOBAL.lastReading, GLOBAL.readEndpoint, xgbServer.ok ? xgbServer.path : null, rfServer.ok ? rfServer.path : null);
+
+      if(hasServerAny){
+        el("noteModelSource").textContent = "Estado: predicción desde backend disponible (al menos un modelo).";
+        setDotState(el("dotModels"), "ok");
+      } else {
+        el("noteModelSource").textContent = "Estado: no se detectaron endpoints de predicción, usando fallback local.";
+        setDotState(el("dotModels"), "bad");
+      }
+
+      el("formStatus").textContent = `Estado: predicción completada (${horizonLabel(horizon)}).`;
+    }
+
+    // Menu handlers
+    function openMenu(){
+      el("menu").classList.add("open");
+      el("btnMenu").setAttribute("aria-expanded","true");
+    }
+    function closeMenu(){
+      el("menu").classList.remove("open");
+      el("btnMenu").setAttribute("aria-expanded","false");
+    }
+
+    // PWA: manifest + service worker (inline)
+    function setupPWA(){
+      try{
+        // icon simple (data url)
+        const icon = (() => {
+          const c = document.createElement("canvas");
+          c.width = 256; c.height = 256;
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#0b0f14";
+          ctx.fillRect(0,0,256,256);
+
+          const g = ctx.createLinearGradient(40,40,216,216);
+          g.addColorStop(0, "rgba(0,229,255,0.9)");
+          g.addColorStop(1, "rgba(0,200,83,0.9)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.roundRect(28,28,200,200,48);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(242,246,255,0.9)";
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.moveTo(92,148);
+          ctx.lineTo(122,118);
+          ctx.lineTo(164,168);
+          ctx.stroke();
+
+          return c.toDataURL("image/png");
+        })();
+
+        const manifest = {
+          name: "Monitoreo Energético",
+          short_name: "Energía",
+          start_url: "./prediccion.html",
+          display: "standalone",
+          background_color: "#0b0f14",
+          theme_color: "#0b0f14",
+          icons: [
+            { src: icon, sizes: "256x256", type: "image/png" }
+          ]
+        };
+
+        const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+        const url = URL.createObjectURL(blob);
+
+        let link = document.querySelector('link[rel="manifest"]');
+        if(!link){
+          link = document.createElement("link");
+          link.rel = "manifest";
+          document.head.appendChild(link);
+        }
+        link.href = url;
+
+        if("serviceWorker" in navigator){
+          const swCode = `
+            const CACHE = "pwa-energy-v1";
+            self.addEventListener("install", (e) => {
+              e.waitUntil((async () => {
+                const cache = await caches.open(CACHE);
+                try{ await cache.addAll(["./prediccion.html"]); }catch(_){}
+                self.skipWaiting();
+              })());
+            });
+
+            self.addEventListener("activate", (e) => {
+              e.waitUntil((async () => {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => (k !== CACHE) ? caches.delete(k) : Promise.resolve()));
+                self.clients.claim();
+              })());
+            });
+
+            self.addEventListener("fetch", (e) => {
+              const url = new URL(e.request.url);
+              if(url.origin !== location.origin){
+                // network-first para API cross-origin
+                e.respondWith((async () => {
+                  try{
+                    const res = await fetch(e.request);
+                    return res;
+                  }catch(err){
+                    return new Response(JSON.stringify({ ok:false, offline:true }), {
+                      status: 200,
+                      headers: { "content-type":"application/json" }
+                    });
+                  }
+                })());
+                return;
+              }
+
+              e.respondWith((async () => {
+                const cache = await caches.open(CACHE);
+                const cached = await cache.match(e.request);
+                try{
+                  const fresh = await fetch(e.request);
+                  if(fresh && fresh.ok) cache.put(e.request, fresh.clone());
+                  return fresh;
+                }catch(err){
+                  return cached || new Response("Offline", { status: 200, headers: { "content-type":"text/plain" } });
+                }
+              })());
+            });
+          `;
+          const swBlob = new Blob([swCode], { type: "text/javascript" });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(()=>{});
+        }
+
+      }catch(_){}
+    }
+
+    // Wire events
+    el("btnRefresh").addEventListener("click", refreshTrends);
+    el("btnPredict").addEventListener("click", runPrediction);
+    el("btnRun").addEventListener("click", runPrediction);
+    el("btnFill").addEventListener("click", ()=>{
+      if(GLOBAL.lastReading) fillFormFromReading(GLOBAL.lastReading);
+    });
+
+    el("btnMenu").addEventListener("click", ()=>{
+      const open = el("menu").classList.contains("open");
+      if(open) closeMenu(); else openMenu();
+    });
+    el("btnCloseMenu").addEventListener("click", closeMenu);
+
+    document.addEventListener("click", (e)=>{
+      const menu = el("menu");
+      const btn = el("btnMenu");
+      if(!menu.classList.contains("open")) return;
+      if(menu.contains(e.target) || btn.contains(e.target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") closeMenu();
+    });
+
+    // Range buttons
+    for(const id of ["r1h","r6h","r24h","r7d"]){
+      el(id).addEventListener("click", ()=>{
+        GLOBAL.range = el(id).dataset.range;
+        setActiveRange(GLOBAL.range);
+        refreshTrends();
+      });
+    }
+
+    // Mode change
+    el("inMode").addEventListener("change", ()=>{
+      const m = el("inMode").value;
+      el("modeHint").textContent = (m === "auto") ? "Auto" : "Manual";
+      if(m === "auto" && GLOBAL.lastReading) fillFormFromReading(GLOBAL.lastReading);
+    });
+
+    // Live validation
+    const inputs = ["v","i","p","e","hour","temp","dow","loadType"];
+    for(const id of inputs){
+      const node = el(id);
+      node.addEventListener("input", ()=>{
+        const payload = makePayloadFromUI();
+        const v = validateInputs(payload);
+        el("formStatus").textContent = v.ok ? "Estado: listo." : "Estado: hay campos inválidos.";
+      });
+      node.addEventListener("change", ()=>{
+        const payload = makePayloadFromUI();
+        const v = validateInputs(payload);
+        el("formStatus").textContent = v.ok ? "Estado: listo." : "Estado: hay campos inválidos.";
+      });
+    }
+
+    // Online/offline updates
+    window.addEventListener("online", ()=>{ el("menuSub").textContent = "Online"; el("bottomRight").textContent = "Online"; });
+    window.addEventListener("offline", ()=>{ el("menuSub").textContent = "Offline"; el("bottomRight").textContent = "Offline"; });
+
+    // Init
+    setupPWA();
+    setDotState(el("dotSystem"), "bad");
+    setDotState(el("dotBottom"), "bad");
+    setDotState(el("dotModels"), "bad");
+    el("apiBox").textContent = `API_BASE = ${API_BASE}`;
+    el("bottomText").textContent = "Inicializando lectura y tendencias…";
+    el("bottomRight").textContent = navigator.onLine ? "Online" : "Offline";
+
+    (async ()=>{
+      await refreshTrends();
+      // Auto-run prediction once if possible (no bloquea si no hay lectura)
+      if(GLOBAL.lastReading){
+        fillFormFromReading(GLOBAL.lastReading);
+        validateInputs(makePayloadFromUI());
+        await runPrediction();
+      }
+    })();
+
+    setInterval(refreshTrends, POLL_MS);
+  </script>
+</body>
+</html>

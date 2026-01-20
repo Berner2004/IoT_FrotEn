@@ -585,6 +585,55 @@
 
       .bigVal:nth-child(2) { display: none; }
     }
+
+    /* ==============================
+       FIX OVERFLOW MOBILE (no se sale de bordes)
+       Pegar al FINAL del <style>
+       ============================== */
+
+    /* 1) Nunca permitir scroll horizontal */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    .wrap { width: 100%; max-width: 1100px; overflow-x: hidden; }
+
+    /* 2) Tarjetas y contenedores no deben expandir por contenido */
+    .card, .hero, .topbar { max-width: 100%; }
+    .card { overflow: hidden; } /* evita que elementos internos "rompan" la tarjeta */
+
+    /* 3) Textos largos: permitir wrap en móvil */
+    .brand, .brand .t { min-width: 0; }
+    .brand .t strong,
+    .brand .t span {
+      white-space: normal !important;      /* quita nowrap */
+      overflow: visible !important;
+      text-overflow: clip !important;
+      word-break: break-word;
+    }
+
+    /* 4) Topbar: permitir que se acomode en 2 filas sin reventar ancho */
+    .topbar { flex-wrap: wrap; }
+    .actions { flex-wrap: wrap; }
+    .actions .btn { max-width: 100%; }
+
+    /* 5) Menú: ancho adaptable a pantalla (280px en desktop, pero no desborda en móvil) */
+    .menu {
+      width: min(280px, calc(100vw - 28px));
+      right: 14px;
+    }
+
+    /* 6) Chips: evitar que empujen el ancho */
+    .chips { flex-wrap: wrap; max-width: 100%; }
+    .chip { max-width: 100%; }
+
+    /* 7) Tablas/código: si son anchos, que hagan scroll interno en lugar de romper layout */
+    table { display: block; max-width: 100%; overflow-x: auto; }
+    .code { max-width: 100%; overflow-x: auto; }
+
+    /* 8) Ajustes extra para pantallas muy angostas */
+    @media (max-width: 420px){
+      .topbar { gap: 10px; }
+      .actions { width: 100%; justify-content: flex-end; }
+      .btn { padding: 10px 10px; }
+    }
   </style>
 
   <link rel="manifest" href="/manifest.json">
@@ -1440,16 +1489,17 @@ Salida deseada:
         if(!m.has(key)){
           m.set(key,{
             dayKey:key,
-            tsMs:new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),
-            kwh:0,
-            n:0
+            tsMs:new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
+            kwhDay: 0,
+            hoursCount: 0
           });
         }
 
+        // h.kwh_h es energía estimada para ESA hora (kWh en 1 hora)
         if(Number.isFinite(h.kwh_h)){
           const g = m.get(key);
-          g.kwh += h.kwh_h;
-          g.n++;
+          g.kwhDay += h.kwh_h;      // ✅ energía diaria = suma de horas
+          g.hoursCount += 1;
         }
       }
 
@@ -1459,31 +1509,46 @@ Salida deseada:
     function longTermForecastFactory(dailySeries){
       if(!dailySeries || dailySeries.length < 3) return null;
 
-      const y = dailySeries.map(d => d.kwh);
+      // y = energía diaria (kWh/día)
+      const y = dailySeries.map(d => d.kwhDay).filter(Number.isFinite);
       const n = y.length;
+      if(n < 3) return null;
 
       let sx=0, sy=0, sxy=0, sx2=0;
-      y.forEach((v,i)=>{
-        sx+=i; sy+=v; sxy+=i*v; sx2+=i*i;
-      });
+      y.forEach((v,i)=>{ sx+=i; sy+=v; sxy+=i*v; sx2+=i*i; });
 
-      const slope = (n*sxy - sx*sy) / Math.max(1,(n*sx2 - sx*sx));
+      const denom = (n*sx2 - sx*sx);
+      const slope = denom ? (n*sxy - sx*sy) / denom : 0;
       const mean = sy / n;
 
+      // horas medidas promedio por día (para convertir a kW promedio)
+      const hoursMeasuredAvg = (() => {
+        const hs = dailySeries.map(d => d.hoursCount).filter(Number.isFinite);
+        if(!hs.length) return 12; // fallback típico 07-19
+        return hs.reduce((a,b)=>a+b,0) / hs.length;
+      })();
+
       function forecast(days){
-        let total = 0;
+        let totalKwh = 0;
         for(let i=1;i<=days;i++){
-          total += Math.max(0, mean + slope*i);
+          totalKwh += Math.max(0, mean + slope*i); // suma kWh/día
         }
+        const kwhPerDay = totalKwh / days;
+
+        // kW promedio equivalente durante horas medidas
+        const kwAvg = kwhPerDay / Math.max(1, hoursMeasuredAvg);
+
         return {
           days,
-          totalKwh: total,
-          dailyAvg: total / days
+          totalKwh,         // ✅ kWh total periodo
+          kwhPerDay,        // ✅ kWh por día
+          kwAvg,            // ✅ kW promedio (durante horas medidas)
+          hoursMeasuredAvg
         };
       }
 
       return {
-        week: () => forecast(7),
+        week:  () => forecast(7),
         month: () => forecast(30)
       };
     }
@@ -2324,52 +2389,45 @@ Salida deseada:
       return !!GLOBAL.longForecast;
     }
 
-    async function runLongTermPrediction(type){
-      if(GLOBAL.forecastBusy) return;
-      GLOBAL.forecastBusy = true;
-
+    function runLongTermPrediction(type){
       const days = (type === "month") ? 30 : 7;
 
-      // UI: estado inicial
-      el("metaForecast").textContent = `Horizonte: ${days} días · Procesando histórico…`;
-      el("ltNote").textContent = "Procesando histórico…";
-      setDotState(el("dotForecast"), "warn");
-      paintTag(el("tagForecast"), "warn");
+      // Construir forecast si falta
+      if(!GLOBAL.longForecast && GLOBAL.daily && GLOBAL.daily.length >= 3){
+        GLOBAL.longForecast = longTermForecastFactory(GLOBAL.daily);
+      }
 
-      try{
-        const ok = await ensureLongForecast(days);
-
-        if(!ok){
-          el("ltNote").textContent = "No se pudo construir el histórico para el forecast (sin datos suficientes o API lenta).";
-          el("metaForecast").textContent = `Horizonte: ${days} días · Error`;
-          setDotState(el("dotForecast"), "bad");
-          paintTag(el("tagForecast"), "bad");
-          return;
-        }
-
-        const res = (days === 30) ? GLOBAL.longForecast.month() : GLOBAL.longForecast.week();
-
-        el("ltTotal").textContent = res.totalKwh.toFixed(2) + " kWh";
-        el("ltAvg").textContent = res.dailyAvg.toFixed(2) + " kWh/día";
-
-        const nivel = res.dailyAvg < 3 ? "Óptimo" : res.dailyAvg < 6 ? "Estable" : "Alto";
-        el("ltNote").textContent = `Forecast listo. Nivel estimado: ${nivel}. Basado en tu histórico disponible.`;
-        el("metaForecast").textContent = `Horizonte: ${days} días · OK`;
-        el("srcForecast").textContent = "Fuente: histórico (API + baseline)";
-        setDotState(el("dotForecast"), "ok");
-        paintTag(el("tagForecast"), "ok");
-
-        // opcional: baja a la tarjeta de forecast
-        el("resultForecast").scrollIntoView({ behavior:"smooth", block:"start" });
-
-      } catch (e){
-        el("ltNote").textContent = "Error inesperado al calcular forecast.";
-        el("metaForecast").textContent = `Horizonte: ${days} días · Error`;
+      if(!GLOBAL.longForecast){
+        el("metaForecast").textContent = `Horizonte: ${days} días · Sin histórico suficiente`;
+        el("ltTotal").textContent = "—";
+        el("ltAvg").textContent = "—";
+        el("ltNote").textContent = "No hay datos suficientes para estimar 7–30 días.";
         setDotState(el("dotForecast"), "bad");
         paintTag(el("tagForecast"), "bad");
-      } finally{
-        GLOBAL.forecastBusy = false;
+        return;
       }
+
+      const res = (days === 30) ? GLOBAL.longForecast.month() : GLOBAL.longForecast.week();
+
+      // ✅ kWh total del periodo (semana/mes)
+      el("ltTotal").textContent = `${res.totalKwh.toFixed(2)} kWh`;
+
+      // ✅ kWh por día
+      el("ltAvg").textContent = `${res.kwhPerDay.toFixed(2)} kWh/día`;
+
+      // ✅ kW promedio equivalente (lo que tú llamas “kW por día”)
+      const kwAvgTxt = `${res.kwAvg.toFixed(3)} kW promedio`;
+
+      el("metaForecast").textContent = `Horizonte: ${days} días · Horas/día usadas: ${res.hoursMeasuredAvg.toFixed(1)}h`;
+      el("srcForecast").textContent = "Fuente: histórico (API + baseline)";
+
+      el("ltNote").textContent =
+        (days === 30)
+          ? `Mes: Energía total ${res.totalKwh.toFixed(2)} kWh · Potencia promedio del mes: ${kwAvgTxt}.`
+          : `Semana: Energía total ${res.totalKwh.toFixed(2)} kWh · Potencia promedio diaria: ${kwAvgTxt}.`;
+
+      setDotState(el("dotForecast"), "ok");
+      paintTag(el("tagForecast"), "ok");
     }
 
     // Menu handlers

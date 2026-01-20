@@ -915,13 +915,11 @@ Salida deseada:
                   <span class="muted">0–6</span>
                 </label>
                 <select id="dow">
-                  <option value="0">Domingo (0)</option>
                   <option value="1">Lunes (1)</option>
                   <option value="2">Martes (2)</option>
                   <option value="3">Miércoles (3)</option>
                   <option value="4">Jueves (4)</option>
                   <option value="5">Viernes (5)</option>
-                  <option value="6">Sábado (6)</option>
                 </select>
                 <div class="hint">Se autocompleta con la fecha del dato.</div>
               </div>
@@ -941,23 +939,20 @@ Salida deseada:
                 </select>
                 <div class="hint">Si tu backend no usa este campo, se ignora.</div>
               </div>
-
-              <div class="field">
-                <label>
-                  <span><b>Temperatura (°C)</b> <span class="muted">(opcional)</span></span>
-                  <span class="muted">0–60</span>
-                </label>
-                <input id="temp" type="number" step="0.1" min="0" max="60" placeholder="Ej: 26.0" />
-                <div class="hint">Se envía solo si la ingresas. Se valida 0–60°C.</div>
-                <div class="err" id="errT">Temperatura inválida (0–60 °C).</div>
-              </div>
             </div>
 
             <div class="row2">
               <button class="btn primary" id="btnRun" style="justify-content:center;">Ejecutar predicción (XGB + RF)</button>
               <button class="btn" id="btnFill" style="justify-content:center;">Autocompletar desde último dato</button>
             </div>
-
+            <div class="row2">
+  <button class="btn" onclick="runLongTermPrediction('week')">
+    Predicción 7 días
+  </button>
+  <button class="btn" onclick="runLongTermPrediction('month')">
+    Predicción 30 días
+  </button>
+</div>
             <div class="footerNote" id="formStatus">Estado: listo.</div>
           </div>
 
@@ -1300,6 +1295,32 @@ Salida deseada:
       }
       return out;
     }
+    
+    function groupDaily(hourlySeries){
+  const m = new Map();
+
+  for(const h of hourlySeries){
+    const d = new Date(h.tsMs);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+    if(!m.has(key)){
+      m.set(key,{
+        dayKey:key,
+        tsMs:new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),
+        kwh:0,
+        n:0
+      });
+    }
+
+    if(Number.isFinite(h.kwh_h)){
+      const g = m.get(key);
+      g.kwh += h.kwh_h;
+      g.n++;
+    }
+  }
+
+  return Array.from(m.values()).sort((a,b)=>a.tsMs-b.tsMs);
+}
 
     function percentile(arr, p){
       const a = arr.filter(x=>Number.isFinite(x)).slice().sort((x,y)=>x-y);
@@ -1744,6 +1765,37 @@ Salida deseada:
 
       return { predictRF, predictXGB };
     }
+    function longTermForecastFactory(dailySeries){
+  if(!dailySeries || dailySeries.length < 3) return null;
+
+  const y = dailySeries.map(d => d.kwh);
+  const n = y.length;
+
+  let sx=0, sy=0, sxy=0, sx2=0;
+  y.forEach((v,i)=>{
+    sx+=i; sy+=v; sxy+=i*v; sx2+=i*i;
+  });
+
+  const slope = (n*sxy - sx*sy) / Math.max(1,(n*sx2 - sx*sx));
+  const mean = sy / n;
+
+  function forecast(days){
+    let total = 0;
+    for(let i=1;i<=days;i++){
+      total += Math.max(0, mean + slope*i);
+    }
+    return {
+      days,
+      totalKwh: total,
+      dailyAvg: total / days
+    };
+  }
+
+  return {
+    week: () => forecast(7),
+    month: () => forecast(30)
+  };
+}
 
     function setPredictionUI(model, out, src){
       const isXgb = model === "xgb";
@@ -1838,8 +1890,13 @@ Salida deseada:
       const filtered = res.readings.filter(r => r.tsMs >= (now - ms));
 
       // hourly aggregation
+      const allHourly = groupHourly(res.readings);
       const hourly = groupHourly(filtered);
       GLOBAL.hourly = hourly;
+      // ===== RANGO COMPLETO PARA FORECAST MEDIANO PLAZO =====
+
+      GLOBAL.daily = groupDaily(allHourly);
+      GLOBAL.longForecast = longTermForecastFactory(GLOBAL.daily);
 
       // predictor baseline
       GLOBAL.predictor = localPredictorFactory(hourly);
@@ -1961,6 +2018,27 @@ Salida deseada:
 
       el("formStatus").textContent = `Estado: predicción completada (${horizonLabel(horizon)}).`;
     }
+    function runLongTermPrediction(type){
+  if(!GLOBAL.longForecast){
+    alert("No hay datos suficientes para predicción a mediano plazo.");
+    return;
+  }
+
+  const res = (type === "month")
+    ? GLOBAL.longForecast.month()
+    : GLOBAL.longForecast.week();
+
+  const nivel =
+    res.dailyAvg < 3 ? "Óptimo" :
+    res.dailyAvg < 6 ? "Estable" : "Alto";
+
+  alert(
+    `Predicción ${type === "month" ? "30 días" : "7 días"}\n\n` +
+    `Consumo total: ${res.totalKwh.toFixed(2)} kWh\n` +
+    `Promedio diario: ${res.dailyAvg.toFixed(2)} kWh/día\n` +
+    `Nivel: ${nivel}`
+  );
+}
 
     // Menu handlers
     function openMenu(){

@@ -98,6 +98,27 @@
     .kpi .v{margin-top:6px;font-size:20px;font-weight:900;letter-spacing:-.3px;color:var(--accent)}
     .kpi .u{color:var(--muted);font-size:11.5px;margin-top:4px}
 
+    /* Day filter */
+    .filters{display:grid;gap:10px;margin-top:10px}
+    @media(min-width:650px){.filters{grid-template-columns:1.1fr .9fr}}
+    .field{
+      border:1px solid rgba(34,48,67,.75);
+      background:rgba(15,22,32,.65);
+      border-radius:16px;
+      padding:12px
+    }
+    .field label{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;margin-bottom:8px}
+    .field label b{color:rgba(242,246,255,.92);font-size:12.5px}
+    select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(34,48,67,.85);
+      background:rgba(18,26,35,.6);
+      color:var(--text);
+      outline:none;
+    }
+
     /* Chart */
     .chartWrap{margin-top:10px;border:1px solid rgba(34,48,67,.75);background:rgba(15,22,32,.65);
       border-radius:16px;overflow:hidden}
@@ -124,20 +145,17 @@
     .dot.ok{background:var(--ok)}
     .dot.bad{background:var(--bad)}
   </style>
-  <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0b0f14">
 
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b0f14">
 </head>
+
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/service-worker.js")
-        .then(reg => {
-          console.log("Service Worker registrado:", reg.scope);
-        })
-        .catch(err => {
-          console.error("SW error:", err);
-        });
+        .then(reg => console.log("Service Worker registrado:", reg.scope))
+        .catch(err => console.error("SW error:", err));
     });
   }
 </script>
@@ -176,7 +194,7 @@
     <h1>Resultados del histórico de lecturas</h1>
     <p>
       Esta sección resume <b>todas las lecturas almacenadas en la base de datos</b>, muestra tendencias reales
-      y presenta <b>predicciones estimadas</b> basadas en el comportamiento histórico completo.
+      y presenta <b>picos y días de mayor consumo</b> basados en el histórico completo.
     </p>
   </div>
 
@@ -185,28 +203,48 @@
     <div>
       <div class="card">
         <h2>Resumen global</h2>
+
+        <div class="filters">
+          <div class="field">
+            <label><span><b>Filtrar por día</b></span><span>Ver tabla + KPIs del día</span></label>
+            <select id="daySelect">
+              <option value="all">Todos los días</option>
+            </select>
+          </div>
+          <div class="field">
+            <label><span><b>Vista del gráfico</b></span><span>Ventana temporal</span></label>
+            <div class="seg">
+              <button class="pillBtn active" data-range="24h" id="r24h">24h</button>
+              <button class="pillBtn" data-range="7d" id="r7d">7d</button>
+              <button class="pillBtn" data-range="30d" id="r30d">30d</button>
+            </div>
+          </div>
+        </div>
+
         <div class="kpis">
           <div class="kpi"><div class="k">Lecturas cargadas</div><div class="v" id="kCount">—</div><div class="u">registros</div></div>
           <div class="kpi"><div class="k">Rango temporal</div><div class="v" id="kRange">—</div><div class="u">desde · hasta</div></div>
           <div class="kpi"><div class="k">Potencia promedio</div><div class="v" id="kPavg">—</div><div class="u">W</div></div>
           <div class="kpi"><div class="k">Consumo medio</div><div class="v" id="kKwh">—</div><div class="u">kWh/h</div></div>
         </div>
+
+        <div class="kpis" style="margin-top:10px">
+          <div class="kpi"><div class="k">Pico global (máx)</div><div class="v" id="kPeak">—</div><div class="u">W</div></div>
+          <div class="kpi"><div class="k">Percentil 95 (picos)</div><div class="v" id="kP95">—</div><div class="u">W</div></div>
+          <div class="kpi"><div class="k">Día más alto</div><div class="v" id="kTopDay">—</div><div class="u">kWh estimados</div></div>
+          <div class="kpi"><div class="k">Top 3 días</div><div class="v" id="kTop3">—</div><div class="u">ranking</div></div>
+        </div>
       </div>
 
       <div class="card">
         <h2>Tendencias y proyección</h2>
         <p>
-          El gráfico muestra potencia promedio (W) y consumo horario estimado (kWh/h).
-          La proyección se calcula como una extensión del perfil horario (baseline robusto).
+          El gráfico muestra potencia promedio (W) y consumo horario estimado (kWh/h) agrupado por hora.
+          La ventana cambia con 24h, 7d y 30d.
         </p>
         <div class="chartWrap">
           <canvas id="chart" width="1000" height="240"></canvas>
           <div class="chartBar">
-            <div class="seg">
-              <button class="pillBtn active" data-range="24h" id="r24h">24h</button>
-              <button class="pillBtn" data-range="7d" id="r7d">7d</button>
-              <button class="pillBtn" data-range="30d" id="r30d">30d</button>
-            </div>
             <div id="chartMeta">—</div>
           </div>
         </div>
@@ -221,7 +259,7 @@
     <!-- Derecha -->
     <div>
       <div class="card">
-        <h2>Últimas lecturas</h2>
+        <h2 id="tblTitle">Últimas 25 lecturas</h2>
         <table>
           <thead><tr><th>Hora</th><th>V</th><th>I</th><th>P</th><th>E</th></tr></thead>
           <tbody id="tbl"><tr><td colspan="5">Esperando datos…</td></tr></tbody>
@@ -236,7 +274,9 @@
   </div>
 
   <div class="bottom">
-    <div class="left"><span class="dot" id="dot"></span><span id="bottomText">Inicializando…</span></div>
+    <div class="left" style="display:flex;align-items:center;gap:10px">
+      <span class="dot" id="dot"></span><span id="bottomText">Inicializando…</span>
+    </div>
     <div class="right">PWA Ready</div>
   </div>
 </div>
@@ -246,91 +286,404 @@
   const READ = "/api/readings?limit=5000";
 
   const el = (id)=>document.getElementById(id);
-  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
-  function infer(r, keys){ for(const k of keys){ if(r[k]!=null) return Number(r[k]); } return null; }
-  function inferTS(r){ const t=r.ts||r.timestamp||r.createdAt; const d=new Date(t); return Number.isFinite(d.getTime())?d.getTime():null; }
-
-  function norm(r){
-    const v=infer(r,["v","vrms","voltage"]);
-    const i=infer(r,["i","irms","current"]);
-    let p=infer(r,["p","p_w","power"]);
-    if(!Number.isFinite(p)&&Number.isFinite(v)&&Number.isFinite(i)) p=v*i;
-    let e=infer(r,["energy_kwh","kwh_total","e"]);
-    if(!Number.isFinite(e)){ const wh=infer(r,["energy_wh","e_wh"]); if(Number.isFinite(wh)) e=wh/1000; }
-    return { tsMs:inferTS(r), v,i,p,e };
+  // Helpers
+  function infer(r, keys){
+    for(const k of keys){
+      if(r && r[k] != null && r[k] !== "") {
+        const n = Number(r[k]);
+        if(Number.isFinite(n)) return n;
+      }
+    }
+    return null;
+  }
+  function inferTS(r){
+    const t = (r && (r.ts || r.timestamp || r.createdAt || r.created_at || r.date)) || null;
+    const d = new Date(t);
+    return Number.isFinite(d.getTime()) ? d.getTime() : null;
+  }
+  function dayKey(tsMs){
+    const d=new Date(tsMs);
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const da=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${da}`;
+  }
+  function fmtDate(tsMs){
+    const d=new Date(tsMs);
+    return d.toLocaleDateString();
+  }
+  function fmtTime(tsMs){
+    const d=new Date(tsMs);
+    return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+  function percentile(arr, p){
+    const a = arr.filter(Number.isFinite).slice().sort((x,y)=>x-y);
+    if(!a.length) return null;
+    const idx = (a.length - 1) * p;
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if(lo === hi) return a[lo];
+    const w = idx - lo;
+    return a[lo]*(1-w) + a[hi]*w;
   }
 
+  function norm(r){
+    const v=infer(r,["v","vrms","voltage","voltaje"]);
+    const i=infer(r,["i","irms","current","corriente"]);
+    let p=infer(r,["p","p_w","power","potencia"]);
+    if(!Number.isFinite(p) && Number.isFinite(v) && Number.isFinite(i)) p=v*i;
+
+    // Energía: intenta kWh, si viene en Wh lo convierte
+    let e=infer(r,["energy_kwh","energia_kwh","kwh_total","e","energy"]);
+    if(!Number.isFinite(e)){
+      const wh=infer(r,["energy_wh","energia_wh","e_wh"]);
+      if(Number.isFinite(wh)) e=wh/1000;
+    }
+
+    return { tsMs:inferTS(r), v,i,p,e, raw:r };
+  }
+
+  // Agrupar por hora (para el gráfico)
   function groupHour(arr){
     const m=new Map();
     for(const x of arr){
-      const d=new Date(x.tsMs); const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-      if(!m.has(k)) m.set(k,{tsMs:new Date(d.setMinutes(0,0,0)).getTime(),n:0,pSum:0});
-      const g=m.get(k); g.n++; if(Number.isFinite(x.p)) g.pSum+=x.p;
+      const d=new Date(x.tsMs);
+      const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+      const ts=new Date(d.getFullYear(),d.getMonth(),d.getDate(),d.getHours(),0,0,0).getTime();
+      if(!m.has(k)) m.set(k,{tsMs:ts,n:0,pSum:0});
+      const g=m.get(k);
+      g.n++;
+      if(Number.isFinite(x.p)) g.pSum+=x.p;
     }
-    return Array.from(m.values()).map(g=>({tsMs:g.tsMs,pAvg:g.n?g.pSum/g.n:null,kwh_h:g.n?(g.pSum/g.n)/1000:null})).sort((a,b)=>a.tsMs-b.tsMs);
+    return Array.from(m.values())
+      .map(g=>({tsMs:g.tsMs,pAvg:g.n?g.pSum/g.n:null,kwh_h:g.n?(g.pSum/g.n)/1000:null}))
+      .sort((a,b)=>a.tsMs-b.tsMs);
   }
 
-  function draw(series){
-    const c=el("chart"),ctx=c.getContext("2d"); ctx.clearRect(0,0,c.width,c.height);
-    const pad=40,w=c.width-56,h=c.height-56;
-    const xs=series.map(s=>s.tsMs), p=series.map(s=>s.pAvg), k=series.map(s=>s.kwh_h);
-    if(xs.length<2) return;
+  // Agrupar por día (ranking de consumo)
+  function groupDay(arr){
+    const m=new Map();
+    for(const x of arr){
+      const dk = dayKey(x.tsMs);
+      if(!m.has(dk)) m.set(dk,{day:dk,tsMs:new Date(dk+"T00:00:00").getTime(), n:0, pSum:0, pMax:null});
+      const g=m.get(dk);
+      g.n++;
+      if(Number.isFinite(x.p)){
+        g.pSum += x.p;
+        g.pMax = (g.pMax==null) ? x.p : Math.max(g.pMax, x.p);
+      }
+    }
+    // consumo diario estimado: promedio de potencia * horas medidas
+    // (si tu muestreo es cada 5 min, esto aproxima bien el perfil).
+    const out = Array.from(m.values()).map(g=>{
+      const pAvg = g.n ? g.pSum / g.n : null;
+      // estimación simple de kWh diaria: promedio W /1000 * horas del día (según cobertura real)
+      // mejor: calcular por diferencias de tiempo, pero mantenemos simple y estable.
+      // horas estimadas según cantidad de muestras vs 12h*60/5 = 144 (tu perfil típico)
+      const expectedPer12h = 144;
+      const coverage = Math.min(1, g.n / expectedPer12h);
+      const hoursApprox = 12 * coverage;
+      const kwh = (Number.isFinite(pAvg) ? (pAvg/1000) * hoursApprox : null);
+      return { ...g, pAvg, kwh };
+    }).sort((a,b)=>a.tsMs-b.tsMs);
+
+    return out;
+  }
+
+  // Dibujo gráfico simple
+  function draw(series, label){
+    const c=el("chart"),ctx=c.getContext("2d");
+    ctx.clearRect(0,0,c.width,c.height);
+    if(!series || series.length<2){
+      el("chartMeta").textContent = "Datos insuficientes para graficar.";
+      return;
+    }
+
+    const padL=44, padT=22, padR=16, padB=30;
+    const w=c.width - padL - padR;
+    const h=c.height - padT - padB;
+
+    const xs=series.map(s=>s.tsMs);
+    const p=series.map(s=>s.pAvg);
+    const k=series.map(s=>s.kwh_h);
+
     const x0=Math.min(...xs), x1=Math.max(...xs);
-    const pMax=Math.max(1,...p.filter(Number.isFinite)), kMax=Math.max(0.001,...k.filter(Number.isFinite));
-    const x=(t)=>pad+(t-x0)/(x1-x0)*w;
-    const yP=(v)=>28+(1-(v/pMax))*h;
-    const yK=(v)=>28+(1-(v/kMax))*h;
+    const pMax=Math.max(1,...p.filter(Number.isFinite));
+    const kMax=Math.max(0.001,...k.filter(Number.isFinite));
 
-    ctx.strokeStyle="rgba(34,48,67,.9)"; ctx.strokeRect(1,1,c.width-2,c.height-2);
-    ctx.strokeStyle="rgba(0,200,83,.9)"; ctx.lineWidth=2; ctx.beginPath();
-    series.forEach((s,i)=>{ const X=x(s.tsMs),Y=yP(s.pAvg||0); if(i===0)ctx.moveTo(X,Y); else ctx.lineTo(X,Y); }); ctx.stroke();
-    ctx.strokeStyle="rgba(255,171,0,.9)"; ctx.beginPath();
-    series.forEach((s,i)=>{ const X=x(s.tsMs),Y=yK(s.kwh_h||0); if(i===0)ctx.moveTo(X,Y); else ctx.lineTo(X,Y); }); ctx.stroke();
+    const x=(t)=> padL + ((t-x0)/(x1-x0))*w;
+    const yP=(v)=> padT + (1-((v||0)/pMax))*h;
+    const yK=(v)=> padT + (1-((v||0)/kMax))*h;
+
+    ctx.strokeStyle="rgba(34,48,67,.9)";
+    ctx.strokeRect(1,1,c.width-2,c.height-2);
+
+    // líneas guía
+    ctx.strokeStyle="rgba(34,48,67,.45)";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<=4;i++){
+      const yy=padT+(h/4)*i;
+      ctx.moveTo(padL,yy); ctx.lineTo(padL+w,yy);
+    }
+    ctx.stroke();
+
+    // serie potencia
+    ctx.strokeStyle="rgba(0,200,83,.9)";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    series.forEach((s,i)=>{
+      const X=x(s.tsMs), Y=yP(s.pAvg||0);
+      if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    });
+    ctx.stroke();
+
+    // serie kWh/h
+    ctx.strokeStyle="rgba(255,171,0,.9)";
+    ctx.beginPath();
+    series.forEach((s,i)=>{
+      const X=x(s.tsMs), Y=yK(s.kwh_h||0);
+      if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    });
+    ctx.stroke();
+
+    // meta
+    const last = new Date(series[series.length-1].tsMs);
+    el("chartMeta").textContent =
+      `Vista: ${label} · Pmax: ${Math.round(pMax)} W · Último punto: ${last.toLocaleString()}`;
   }
 
-  function conclusions(arr){
-    if(!arr.length) return "No hay datos suficientes.";
-    const p=arr.map(x=>x.p).filter(Number.isFinite);
-    const avg=p.reduce((a,b)=>a+b,0)/p.length;
-    const max=Math.max(...p);
-    return `El consumo muestra una potencia promedio de ${avg.toFixed(1)} W con picos de hasta ${max.toFixed(1)} W.
-    Se recomienda revisar horarios pico y cargas predominantes para optimizar el consumo.`;
+  function renderTable(arr, title){
+    const last = arr.slice(-25).reverse(); // ✅ 25 lecturas
+    el("tblTitle").textContent = title;
+    el("tbl").innerHTML = last.length ? last.map(x=>{
+      return `<tr>
+        <td>${fmtTime(x.tsMs)}</td>
+        <td>${(Number.isFinite(x.v)?x.v.toFixed(1):"—")}</td>
+        <td>${(Number.isFinite(x.i)?x.i.toFixed(2):"—")}</td>
+        <td>${(Number.isFinite(x.p)?x.p.toFixed(1):"—")}</td>
+        <td>${(Number.isFinite(x.e)?x.e.toFixed(3):"—")}</td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="5">Sin datos para este filtro.</td></tr>`;
+  }
+
+  function fillDaySelect(days){
+    const sel = el("daySelect");
+    const prev = sel.value;
+    sel.innerHTML = `<option value="all">Todos los días</option>` +
+      days.map(d=>`<option value="${d}">${d}</option>`).join("");
+    // preserva selección si existe
+    if(days.includes(prev)) sel.value = prev;
+    else sel.value = "all";
+  }
+
+  function buildInsights(all, daily){
+    const pAll = all.map(x=>x.p).filter(Number.isFinite);
+    const pAvg = pAll.length ? pAll.reduce((a,b)=>a+b,0)/pAll.length : null;
+    const pMax = pAll.length ? Math.max(...pAll) : null;
+    const p95  = pAll.length ? percentile(pAll, 0.95) : null;
+
+    // top picos (top 5)
+    const peaks = all
+      .filter(x=>Number.isFinite(x.p))
+      .slice()
+      .sort((a,b)=>b.p-a.p)
+      .slice(0,5)
+      .map(x=>({ p:x.p, tsMs:x.tsMs }));
+
+    // ranking por día (kwh estimado)
+    const rankedDays = daily
+      .filter(d=>Number.isFinite(d.kwh))
+      .slice()
+      .sort((a,b)=>b.kwh-a.kwh);
+
+    const topDay = rankedDays[0] || null;
+    const top3 = rankedDays.slice(0,3);
+
+    return { pAvg, pMax, p95, peaks, rankedDays, topDay, top3 };
+  }
+
+  function setKPIs(all, hourlyAll, dailyAll, insights){
+    el("kCount").textContent = all.length;
+
+    if(all.length){
+      const first = all[0].tsMs, last = all[all.length-1].tsMs;
+      el("kRange").textContent = `${fmtDate(first)} · ${fmtDate(last)}`;
+    } else {
+      el("kRange").textContent = "—";
+    }
+
+    el("kPavg").textContent = Number.isFinite(insights.pAvg) ? insights.pAvg.toFixed(1) : "—";
+
+    const kAvg = hourlyAll
+      .map(x=>x.kwh_h)
+      .filter(Number.isFinite)
+      .reduce((a,b)=>a+b,0) / Math.max(1, hourlyAll.filter(x=>Number.isFinite(x.kwh_h)).length);
+
+    el("kKwh").textContent = Number.isFinite(kAvg) ? kAvg.toFixed(3) : "—";
+
+    el("kPeak").textContent = Number.isFinite(insights.pMax) ? insights.pMax.toFixed(1) : "—";
+    el("kP95").textContent  = Number.isFinite(insights.p95)  ? insights.p95.toFixed(1)  : "—";
+
+    if(insights.topDay && Number.isFinite(insights.topDay.kwh)){
+      el("kTopDay").textContent = `${insights.topDay.day}`;
+      const t3 = insights.top3.map(d=>d.day).join(", ");
+      el("kTop3").textContent = t3 || "—";
+    } else {
+      el("kTopDay").textContent = "—";
+      el("kTop3").textContent = "—";
+    }
+  }
+
+  function buildConclusions(insights){
+    if(!insights) return "No hay datos suficientes.";
+
+    const parts = [];
+
+    if(Number.isFinite(insights.pAvg) && Number.isFinite(insights.pMax)){
+      parts.push(`La potencia promedio global es ~${insights.pAvg.toFixed(1)} W, con picos máximos de ${insights.pMax.toFixed(1)} W.`);
+    }
+
+    if(Number.isFinite(insights.p95)){
+      parts.push(`El percentil 95 de potencia es ${insights.p95.toFixed(1)} W (referencia de “picos frecuentes”).`);
+    }
+
+    if(insights.topDay && Number.isFinite(insights.topDay.kwh)){
+      parts.push(`El día con mayor consumo estimado fue ${insights.topDay.day}.`);
+    }
+
+    if(insights.peaks && insights.peaks.length){
+      const p1 = insights.peaks[0];
+      parts.push(`El pico más alto ocurrió alrededor de ${new Date(p1.tsMs).toLocaleString()} (${p1.p.toFixed(1)} W).`);
+    }
+
+    parts.push("Recomendación: revisa qué equipos operan en horas pico y considera escalonar cargas para reducir picos.");
+
+    return parts.join(" ");
+  }
+
+  function windowMs(range){
+    if(range==="24h") return 24*60*60*1000;
+    if(range==="7d") return 7*24*60*60*1000;
+    if(range==="30d") return 30*24*60*60*1000;
+    return 24*60*60*1000;
+  }
+
+  function setActiveRange(range){
+    ["r24h","r7d","r30d"].forEach(id=>{
+      const b = el(id);
+      b.classList.toggle("active", b.dataset.range === range);
+    });
+  }
+
+  // Estado global
+  const STATE = {
+    all: [],
+    range: "24h"
+  };
+
+  function applyView(){
+    const all = STATE.all;
+    if(!all.length) return;
+
+    // filtro por día
+    const selDay = el("daySelect").value;
+    const filteredByDay = (selDay === "all") ? all : all.filter(x => dayKey(x.tsMs) === selDay);
+
+    // tabla: 25 del filtro
+    renderTable(filteredByDay, selDay === "all" ? "Últimas 25 lecturas" : `Últimas 25 lecturas · ${selDay}`);
+
+    // gráfico: ventana por rango, sobre TODO (no solo por día) para tendencias globales
+    const lastTs = all[all.length-1].tsMs;
+    const fromTs = lastTs - windowMs(STATE.range);
+    const slice = all.filter(x => x.tsMs >= fromTs);
+
+    const hourly = groupHour(slice);
+    draw(hourly, STATE.range);
+
+    // estado sistema
+    el("sysState").textContent = (selDay === "all")
+      ? "Lecturas cargadas correctamente. Vista global."
+      : `Vista filtrada: ${selDay} (tabla y KPIs del día).`;
   }
 
   async function load(){
     el("bottomText").textContent="Cargando lecturas…";
-    const r=await fetch(API_BASE+READ,{cache:"no-store"});
-    const j=await r.json();
-    const arr=(Array.isArray(j)?j:[]).map(norm).filter(x=>Number.isFinite(x.tsMs));
-    arr.sort((a,b)=>a.tsMs-b.tsMs);
 
-    el("kCount").textContent=arr.length;
-    if(arr.length){
-      el("kRange").textContent=new Date(arr[0].tsMs).toLocaleDateString()+" · "+new Date(arr[arr.length-1].tsMs).toLocaleDateString();
+    try{
+      const r = await fetch(API_BASE+READ,{cache:"no-store"});
+      if(!r.ok) throw new Error("HTTP "+r.status);
+
+      const j = await r.json();
+      const rawArr = Array.isArray(j) ? j : (Array.isArray(j.readings) ? j.readings : []);
+      const arr = rawArr.map(norm).filter(x=>Number.isFinite(x.tsMs));
+      arr.sort((a,b)=>a.tsMs-b.tsMs);
+
+      STATE.all = arr;
+
+      // construir días disponibles
+      const days = Array.from(new Set(arr.map(x=>dayKey(x.tsMs)))).sort();
+      fillDaySelect(days);
+
+      // global hourly/daily para KPIs e insights
+      const hourlyAll = groupHour(arr);
+      const dailyAll = groupDay(arr);
+      const insights = buildInsights(arr, dailyAll);
+
+      setKPIs(arr, hourlyAll, dailyAll, insights);
+      el("conclusions").textContent = buildConclusions(insights);
+
+      // aplicar vista actual (día seleccionado + rango)
+      applyView();
+
+      el("dot").classList.remove("bad");
+      el("dot").classList.add("ok");
+      el("bottomText").textContent = `OK · Lecturas: ${arr.length}`;
+      el("sysState").textContent = "Lecturas cargadas correctamente.";
+    } catch (e){
+      el("dot").classList.remove("ok");
+      el("dot").classList.add("bad");
+      el("bottomText").textContent = "Error al cargar lecturas.";
+      el("sysState").textContent = "No se pudo cargar la información desde la API.";
+      el("tbl").innerHTML = `<tr><td colspan="5">Error: no se pudo cargar datos.</td></tr>`;
+      el("conclusions").textContent = "No hay datos suficientes (error de lectura).";
     }
-    const pAvg=arr.map(x=>x.p).filter(Number.isFinite).reduce((a,b)=>a+b,0)/Math.max(1,arr.length);
-    el("kPavg").textContent=isFinite(pAvg)?pAvg.toFixed(1):"—";
-    const h=groupHour(arr); const kAvg=h.map(x=>x.kwh_h).filter(Number.isFinite).reduce((a,b)=>a+b,0)/Math.max(1,h.length);
-    el("kKwh").textContent=isFinite(kAvg)?kAvg.toFixed(3):"—";
-
-    draw(h);
-    el("conclusions").textContent=conclusions(arr);
-
-    const last=arr.slice(-8).reverse();
-    el("tbl").innerHTML=last.map(x=>{
-      const d=new Date(x.tsMs); const hh=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
-      return `<tr><td>${hh}</td><td>${x.v?.toFixed(1)||"—"}</td><td>${x.i?.toFixed(2)||"—"}</td><td>${x.p?.toFixed(1)||"—"}</td><td>${x.e?.toFixed(3)||"—"}</td></tr>`;
-    }).join("");
-
-    el("sysState").textContent="Lecturas cargadas correctamente.";
-    el("dot").classList.add("ok");
-    el("bottomText").textContent=`OK · Lecturas: ${arr.length}`;
   }
 
+  // Eventos
   el("btnRefresh").addEventListener("click", load);
   el("btnMenu").addEventListener("click", ()=>el("menu").classList.toggle("open"));
+
+  el("daySelect").addEventListener("change", ()=>{
+    // Al cambiar día, también ajustamos KPIs “visibles” a ese día en las tarjetas principales
+    const day = el("daySelect").value;
+    const all = STATE.all;
+    if(!all.length) return;
+
+    const filtered = (day==="all") ? all : all.filter(x => dayKey(x.tsMs) === day);
+    const hourly = groupHour(filtered);
+    const daily = groupDay(filtered);
+    const insights = buildInsights(filtered, daily);
+
+    // KPIs ahora reflejan el filtro seleccionado
+    setKPIs(filtered, hourly, daily, insights);
+    el("conclusions").textContent = buildConclusions(insights);
+
+    applyView();
+  });
+
+  ["r24h","r7d","r30d"].forEach(id=>{
+    el(id).addEventListener("click", ()=>{
+      STATE.range = el(id).dataset.range;
+      setActiveRange(STATE.range);
+      applyView();
+    });
+  });
+
+  // Init
+  setActiveRange("24h");
   load();
 </script>
+
 </body>
 </html>
